@@ -37,7 +37,7 @@ dist/
 target/
 
 # The compiled engine binary (we keep source, not binary)
-engine
+engine_bin
 engine.exe
 run_engine
 engine/run.sh.bak

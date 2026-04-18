@@ -115,6 +115,9 @@ def evaluate(position: Position) -> int:
     mobility_white = 0
     mobility_black = 0
 
+    rooks_white = 0
+    rooks_black = 0
+
     pawns_by_file_white = [0 for _ in range(8)]
     pawns_by_file_black = [0 for _ in range(8)]
 
@@ -155,6 +158,10 @@ def evaluate(position: Position) -> int:
             mg += ROOK_PST[psq]
             eg += ROOK_PST[psq]
             phase += 2
+            if color == WHITE:
+                rooks_white += 1
+            else:
+                rooks_black += 1
         elif ptype == QUEEN:
             mg += QUEEN_PST[psq]
             eg += QUEEN_PST[psq]
@@ -238,6 +245,18 @@ def evaluate(position: Position) -> int:
             mg_score -= 10 * (pawns_by_file_white[file] - 1)
         if pawns_by_file_black[file] > 1:
             mg_score += 10 * (pawns_by_file_black[file] - 1)
+
+        # Rook file bonuses
+        if rooks_white > 0:
+            if pawns_by_file_white[file] == 0 and pawns_by_file_black[file] == 0:
+                mg_score += 8 * rooks_white
+            elif pawns_by_file_white[file] == 0:
+                mg_score += 4 * rooks_white
+        if rooks_black > 0:
+            if pawns_by_file_black[file] == 0 and pawns_by_file_white[file] == 0:
+                mg_score -= 8 * rooks_black
+            elif pawns_by_file_black[file] == 0:
+                mg_score -= 4 * rooks_black
 
     # Passed pawn bonuses
     for sq, p in enumerate(position.board):

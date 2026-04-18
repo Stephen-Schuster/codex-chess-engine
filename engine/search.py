@@ -200,10 +200,27 @@ class Searcher:
     def ordered_moves(self, position: Position, moves: List[Move], ply: int, tt_move: Optional[Move]) -> List[Move]:
         return sorted(moves, key=lambda m: self.score_move(position, m, ply, tt_move), reverse=True)
 
+    def static_exchange_ok(self, position: Position, move: Move, margin: int = -30) -> bool:
+        if not move.is_capture and not move.is_en_passant:
+            return True
+        if move.is_en_passant:
+            victim_value = 100
+        else:
+            victim = position.board[move.to_sq]
+            victim_value = 0 if victim == EMPTY else evaluate_capture_value(piece_type(victim))
+        attacker = position.board[move.from_sq]
+        attacker_value = evaluate_capture_value(piece_type(attacker))
+        return victim_value - attacker_value >= margin
+
     def store_tt(self, key: int, depth: int, score: int, flag: int, move: Optional[Move]) -> None:
         if len(self.tt) >= self.max_tt_size and key not in self.tt:
             # Simple replacement strategy: clear table on overflow
             self.tt.clear()
+        existing = self.tt.get(key)
+        if existing is not None:
+            # Keep deeper entries unless new one is exact.
+            if existing.depth > depth and flag != TT_EXACT:
+                return
         self.tt[key] = TTEntry(depth=depth, score=score, flag=flag, move=move)
 
     def quiescence(self, position: Position, alpha: int, beta: int, ply: int) -> int:
@@ -234,6 +251,8 @@ class Searcher:
                 victim = position.board[move.to_sq]
                 victim_value = 100 if move.is_en_passant else (0 if victim == EMPTY else evaluate_capture_value(piece_type(victim)))
                 if stand_pat + victim_value + 90 < alpha:
+                    continue
+                if not self.static_exchange_ok(position, move, margin=-50):
                     continue
 
             undo = position.make_move(move)
@@ -354,6 +373,11 @@ class Searcher:
             if move_count > 10 and depth <= 3 and not in_check and not move.is_capture and not move.promotion:
                 position.unmake_move(move, undo)
                 continue
+
+            if depth <= 2 and not in_check and move.is_capture and not move.promotion:
+                if not self.static_exchange_ok(position, move, margin=-20):
+                    position.unmake_move(move, undo)
+                    continue
 
             if move_count == 1:
                 score = -self.alphabeta(position, depth - 1 + extension, -beta, -alpha, ply + 1, True)

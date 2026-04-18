@@ -13,6 +13,7 @@ from engine.search import SearchLimits, Searcher
 
 def run_bench(epd_path: str, depth: int, limit: int) -> None:
     searcher = Searcher()
+    searcher.print_info = False
     total_nodes = 0
     total_ms = 0
     tested = 0

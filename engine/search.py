@@ -129,6 +129,8 @@ class Searcher:
         best_score = -INFINITY
         fallback_moves = position.generate_legal_moves()
         if not fallback_moves:
+            if position.in_check(position.side_to_move):
+                return None, -MATE_SCORE, 1
             return None, 0, 1
 
         prev_score = 0
@@ -282,6 +284,7 @@ class Searcher:
             moves = [m for m in position.generate_pseudo_legal_moves() if m.is_capture or m.promotion]
             moves = self.ordered_moves(position, moves, ply, None)
 
+        searched_any = False
         for move in moves:
             if not in_check and move.is_capture and not move.promotion:
                 victim = position.board[move.to_sq]
@@ -296,6 +299,8 @@ class Searcher:
                 position.unmake_move(move, undo)
                 continue
 
+            searched_any = True
+
             score = -self.quiescence(position, -beta, -alpha, ply + 1)
             position.unmake_move(move, undo)
 
@@ -306,6 +311,9 @@ class Searcher:
                 return beta
             if score > alpha:
                 alpha = score
+
+        if in_check and not searched_any:
+            return -MATE_SCORE + ply
 
         return alpha
 

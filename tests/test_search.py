@@ -76,3 +76,19 @@ def test_futility_pruning_keeps_tactical_checks() -> None:
     assert move in pos.generate_legal_moves()
     best, _score, _elapsed = searcher.search(pos, SearchLimits(depth=3, nodes=800))
     assert best is not None
+
+
+def test_quiescence_returns_mate_when_in_check_no_legal_moves() -> None:
+    searcher = Searcher()
+    # Black to move, checkmated.
+    pos = Position.from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1")
+    score = searcher.quiescence(pos, -1_000_000, 1_000_000, ply=0)
+    assert score <= -99990
+
+
+def test_insufficient_material_root_is_draw_score() -> None:
+    searcher = Searcher()
+    # Legal king-only position.
+    pos = Position.from_fen("8/8/8/8/8/2k5/8/K7 w - - 0 1")
+    _best, score, _elapsed = searcher.search(pos, SearchLimits(depth=3))
+    assert score == 0

@@ -25,3 +25,16 @@ def test_knight_outpost_bonus() -> None:
     outpost = Position.from_fen("4k3/8/8/3N4/4P3/8/8/4K3 w - - 0 1")
     no_support = Position.from_fen("4k3/8/8/3N4/8/8/8/4K3 w - - 0 1")
     assert evaluate(outpost) > evaluate(no_support)
+
+
+def test_pawn_islands_penalty() -> None:
+    # White has fewer islands in the first position.
+    fewer_islands = Position.from_fen("4k3/8/8/8/8/8/PPPP4/4K3 w - - 0 1")
+    more_islands = Position.from_fen("4k3/8/8/8/8/8/P1P1P3/4K3 w - - 0 1")
+    assert evaluate(fewer_islands) > evaluate(more_islands)
+
+
+def test_connected_pawn_bonus() -> None:
+    connected = Position.from_fen("4k3/8/8/8/8/8/PP6/4K3 w - - 0 1")
+    isolated = Position.from_fen("4k3/8/8/8/8/8/P1P5/4K3 w - - 0 1")
+    assert evaluate(connected) > evaluate(isolated)

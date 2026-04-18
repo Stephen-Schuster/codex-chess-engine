@@ -121,6 +121,9 @@ def evaluate(position: Position) -> int:
     pawns_by_file_white = [0 for _ in range(8)]
     pawns_by_file_black = [0 for _ in range(8)]
 
+    pawn_squares_white = []
+    pawn_squares_black = []
+
     for sq, p in enumerate(position.board):
         if p == 0:
             continue
@@ -139,9 +142,11 @@ def evaluate(position: Position) -> int:
             if color == WHITE:
                 pawns_white[sq % 8] = True
                 pawns_by_file_white[sq % 8] += 1
+                pawn_squares_white.append(sq)
             else:
                 pawns_black[sq % 8] = True
                 pawns_by_file_black[sq % 8] += 1
+                pawn_squares_black.append(sq)
         elif ptype == KNIGHT:
             mg += KNIGHT_PST[psq]
             eg += KNIGHT_PST[psq]
@@ -292,6 +297,60 @@ def evaluate(position: Position) -> int:
                 bonus = 12 + (7 - rank) * 10
                 mg_score -= bonus
                 eg_score -= bonus * 2
+
+    # Pawn islands: fewer islands are better.
+    white_islands = 0
+    black_islands = 0
+    for file in range(8):
+        if pawns_by_file_white[file] > 0 and (file == 0 or pawns_by_file_white[file - 1] == 0):
+            white_islands += 1
+        if pawns_by_file_black[file] > 0 and (file == 0 or pawns_by_file_black[file - 1] == 0):
+            black_islands += 1
+    mg_score += (black_islands - white_islands) * 8
+    eg_score += (black_islands - white_islands) * 10
+
+    # Connected pawns bonus.
+    for sq in pawn_squares_white:
+        rank = sq // 8
+        file = sq % 8
+        connected = False
+        for dr in (-1, 0, 1):
+            rr = rank + dr
+            if not (0 <= rr < 8):
+                continue
+            for df in (-1, 1):
+                ff = file + df
+                if 0 <= ff < 8:
+                    tp = position.board[rr * 8 + ff]
+                    if tp != EMPTY and piece_color(tp) == WHITE and piece_type(tp) == PAWN:
+                        connected = True
+                        break
+            if connected:
+                break
+        if connected:
+            mg_score += 4
+            eg_score += 4
+
+    for sq in pawn_squares_black:
+        rank = sq // 8
+        file = sq % 8
+        connected = False
+        for dr in (-1, 0, 1):
+            rr = rank + dr
+            if not (0 <= rr < 8):
+                continue
+            for df in (-1, 1):
+                ff = file + df
+                if 0 <= ff < 8:
+                    tp = position.board[rr * 8 + ff]
+                    if tp != EMPTY and piece_color(tp) == BLACK and piece_type(tp) == PAWN:
+                        connected = True
+                        break
+            if connected:
+                break
+        if connected:
+            mg_score -= 4
+            eg_score -= 4
 
     # Knight outpost bonus (very lightweight): supported by pawn and not attacked by enemy pawn.
     for sq, p in enumerate(position.board):

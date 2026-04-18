@@ -47,7 +47,11 @@ def play_one_game(
                 return -1 if position.side_to_move == 0 else 1
             return 0
 
-        if position.halfmove_clock >= 100 or position.is_threefold_repetition():
+        if (
+            position.halfmove_clock >= 100
+            or position.is_threefold_repetition()
+            or position.is_insufficient_material()
+        ):
             return 0
 
         if position.side_to_move == 0:

@@ -666,3 +666,48 @@ class Position:
 
     def is_stalemate(self) -> bool:
         return not self.in_check(self.side_to_move) and not self.generate_legal_moves()
+
+    def is_insufficient_material(self) -> bool:
+        white_minor = 0
+        black_minor = 0
+        white_bishop_colors: List[int] = []
+        black_bishop_colors: List[int] = []
+
+        for sq, p in enumerate(self.board):
+            if p == EMPTY:
+                continue
+            ptype = piece_type(p)
+            color = piece_color(p)
+
+            if ptype in (PAWN, ROOK, QUEEN):
+                return False
+            if ptype == KING:
+                continue
+
+            if ptype == KNIGHT:
+                if color == WHITE:
+                    white_minor += 1
+                else:
+                    black_minor += 1
+            elif ptype == BISHOP:
+                square_color = (sq // 8 + sq % 8) % 2
+                if color == WHITE:
+                    white_minor += 1
+                    white_bishop_colors.append(square_color)
+                else:
+                    black_minor += 1
+                    black_bishop_colors.append(square_color)
+
+        # K vs K
+        if white_minor == 0 and black_minor == 0:
+            return True
+        # K+N/B vs K
+        if white_minor == 1 and black_minor == 0:
+            return True
+        if black_minor == 1 and white_minor == 0:
+            return True
+        # K+B vs K+B with bishops on same color
+        if white_minor == 1 and black_minor == 1 and len(white_bishop_colors) == 1 and len(black_bishop_colors) == 1:
+            return white_bishop_colors[0] == black_bishop_colors[0]
+
+        return False

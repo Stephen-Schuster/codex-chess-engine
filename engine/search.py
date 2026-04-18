@@ -275,6 +275,9 @@ class Searcher:
             if position.is_threefold_repetition():
                 return 0
 
+        if position.is_insufficient_material():
+            return 0
+
         static_eval = evaluate(position)
 
         tt_entry = self.tt.get(position.zobrist_key)

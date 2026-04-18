@@ -55,3 +55,9 @@ def test_tempo_bonus_side_to_move() -> None:
     white_to_move = Position.from_fen("4k3/8/8/8/8/8/8/4K3 w - - 0 1")
     black_to_move = Position.from_fen("4k3/8/8/8/8/8/8/4K3 b - - 0 1")
     assert evaluate(white_to_move) >= evaluate(black_to_move)
+
+
+def test_rook_behind_passed_pawn_bonus() -> None:
+    behind = Position.from_fen("4k3/8/8/8/8/8/4P3/4R1K1 w - - 0 1")
+    side = Position.from_fen("4k3/8/8/8/8/8/4P3/1R4K1 w - - 0 1")
+    assert evaluate(behind) > evaluate(side)

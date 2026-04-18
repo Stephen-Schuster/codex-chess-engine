@@ -435,6 +435,53 @@ def evaluate(position: Position) -> int:
             mg_score -= 20
             eg_score -= 25
 
+    # Rook behind passed pawn bonus.
+    for sq, p in enumerate(position.board):
+        if p == EMPTY or piece_type(p) != ROOK:
+            continue
+        color = piece_color(p)
+        rank = sq // 8
+        file = sq % 8
+        if color == WHITE:
+            bonus = 0
+            for r in range(rank + 1, 8):
+                tp = position.board[r * 8 + file]
+                if tp != EMPTY and piece_color(tp) == WHITE and piece_type(tp) == PAWN:
+                    # Check if this pawn is passed.
+                    is_passed = True
+                    for rr in range(r + 1, 8):
+                        for ff in range(max(0, file - 1), min(7, file + 1) + 1):
+                            ep = position.board[rr * 8 + ff]
+                            if ep != EMPTY and piece_color(ep) == BLACK and piece_type(ep) == PAWN:
+                                is_passed = False
+                                break
+                        if not is_passed:
+                            break
+                    if is_passed:
+                        bonus = 14
+                    break
+            mg_score += bonus
+            eg_score += bonus * 2
+        else:
+            bonus = 0
+            for r in range(rank - 1, -1, -1):
+                tp = position.board[r * 8 + file]
+                if tp != EMPTY and piece_color(tp) == BLACK and piece_type(tp) == PAWN:
+                    is_passed = True
+                    for rr in range(r - 1, -1, -1):
+                        for ff in range(max(0, file - 1), min(7, file + 1) + 1):
+                            ep = position.board[rr * 8 + ff]
+                            if ep != EMPTY and piece_color(ep) == WHITE and piece_type(ep) == PAWN:
+                                is_passed = False
+                                break
+                        if not is_passed:
+                            break
+                    if is_passed:
+                        bonus = 14
+                    break
+            mg_score -= bonus
+            eg_score -= bonus * 2
+
     # Tempo bonus to side to move.
     mg_score += 8 if position.side_to_move == WHITE else -8
 

@@ -17,6 +17,12 @@ from .eval import evaluate
 MATE_SCORE = 100000
 INFINITY = 1_000_000
 MAX_PLY = 256
+LMP_BASE = {
+    1: 0,
+    2: 8,
+    3: 12,
+    4: 16,
+}
 
 
 @dataclass
@@ -460,7 +466,7 @@ class Searcher:
 
             extension = 0
             # Simple check extension for forcing lines
-            if depth >= 3 and gives_check and ply < MAX_PLY - 4:
+            if depth >= 4 and gives_check and move_count <= 6 and ply < MAX_PLY - 4:
                 extension = 1
 
             # Futility pruning for quiet non-check moves near the frontier.
@@ -475,6 +481,21 @@ class Searcher:
             ):
                 futility_margin = 120 * depth
                 if static_eval + futility_margin <= alpha:
+                    position.unmake_move(move, undo)
+                    continue
+
+            # Late move pruning for quiet non-check moves.
+            if (
+                depth <= 4
+                and not in_check
+                and not gives_check
+                and not move.is_capture
+                and not move.promotion
+                and alpha > -MATE_SCORE + 1000
+                and beta < MATE_SCORE - 1000
+            ):
+                threshold = LMP_BASE.get(depth, 16) + (2 if extension == 0 else 0)
+                if move_count > threshold:
                     position.unmake_move(move, undo)
                     continue
 

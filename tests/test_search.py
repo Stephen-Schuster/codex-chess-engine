@@ -140,6 +140,16 @@ def test_iid_finds_move_and_search_completes() -> None:
     assert best is not None
 
 
+def test_lmp_keeps_tactical_captures() -> None:
+    searcher = Searcher()
+    # Plenty of quiet options plus a direct tactical capture.
+    pos = Position.from_fen("4k3/8/8/3q4/3Q4/8/8/4K3 w - - 0 1")
+    cap = pos.parse_uci_move("d4d5")
+    assert cap is not None
+    best, _score, _elapsed = searcher.search(pos, SearchLimits(depth=4, nodes=1500))
+    assert best is not None
+
+
 def test_root_repetition_is_draw() -> None:
     searcher = Searcher()
     pos = Position.from_fen(Position.START_FEN)

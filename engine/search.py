@@ -57,6 +57,7 @@ class Searcher:
         self.max_tt_size = 1_000_000
         self.killers: List[List[Optional[Move]]] = [[None, None] for _ in range(MAX_PLY)]
         self.history = [[0 for _ in range(64)] for _ in range(64)]
+        self.countermoves: List[List[Optional[Move]]] = [[None for _ in range(64)] for _ in range(64)]
         self.pv_table: List[List[Optional[Move]]] = [[None for _ in range(MAX_PLY)] for _ in range(MAX_PLY)]
         self.pv_length: List[int] = [0 for _ in range(MAX_PLY)]
         self.search_counter = 0
@@ -65,6 +66,7 @@ class Searcher:
         self.tt.clear()
         self.killers = [[None, None] for _ in range(MAX_PLY)]
         self.history = [[0 for _ in range(64)] for _ in range(64)]
+        self.countermoves = [[None for _ in range(64)] for _ in range(64)]
 
     def set_hash_mb(self, mb: int) -> None:
         mb = max(1, min(1024, mb))
@@ -155,7 +157,7 @@ class Searcher:
                 beta = prev_score + aspiration
 
             while True:
-                score = self.alphabeta(position, depth, alpha, beta, 0, True)
+                score = self.alphabeta(position, depth, alpha, beta, 0, True, None)
                 if self.should_stop():
                     break
 
@@ -199,7 +201,14 @@ class Searcher:
             best_move = fallback_moves[0]
         return best_move, best_score, elapsed
 
-    def score_move(self, position: Position, move: Move, ply: int, tt_move: Optional[Move]) -> int:
+    def score_move(
+        self,
+        position: Position,
+        move: Move,
+        ply: int,
+        tt_move: Optional[Move],
+        prev_move: Optional[Move],
+    ) -> int:
         if tt_move and move == tt_move:
             return 2_000_000
 
@@ -222,14 +231,25 @@ class Searcher:
                 score = 800_000
             else:
                 score = self.history[move.from_sq][move.to_sq]
+                if prev_move is not None:
+                    cm = self.countermoves[prev_move.from_sq][prev_move.to_sq]
+                    if cm and move == cm:
+                        score += 600_000
 
         if move.promotion:
             score += 50_000 + evaluate_capture_value(move.promotion)
 
         return score
 
-    def ordered_moves(self, position: Position, moves: List[Move], ply: int, tt_move: Optional[Move]) -> List[Move]:
-        return sorted(moves, key=lambda m: self.score_move(position, m, ply, tt_move), reverse=True)
+    def ordered_moves(
+        self,
+        position: Position,
+        moves: List[Move],
+        ply: int,
+        tt_move: Optional[Move],
+        prev_move: Optional[Move],
+    ) -> List[Move]:
+        return sorted(moves, key=lambda m: self.score_move(position, m, ply, tt_move, prev_move), reverse=True)
 
     def score_to_tt(self, score: int, ply: int) -> int:
         if score > MATE_SCORE - 1000:
@@ -289,7 +309,7 @@ class Searcher:
             moves = position.generate_legal_moves()
         else:
             moves = [m for m in position.generate_pseudo_legal_moves() if m.is_capture or m.promotion]
-            moves = self.ordered_moves(position, moves, ply, None)
+            moves = self.ordered_moves(position, moves, ply, None, None)
 
         searched_any = False
         for move in moves:
@@ -324,7 +344,16 @@ class Searcher:
 
         return alpha
 
-    def alphabeta(self, position: Position, depth: int, alpha: int, beta: int, ply: int, allow_null: bool) -> int:
+    def alphabeta(
+        self,
+        position: Position,
+        depth: int,
+        alpha: int,
+        beta: int,
+        ply: int,
+        allow_null: bool,
+        prev_move: Optional[Move],
+    ) -> int:
         if ply >= MAX_PLY - 1:
             return evaluate(position)
         self.pv_length[ply] = ply
@@ -376,7 +405,7 @@ class Searcher:
                 position.side_to_move = 1 - position.side_to_move
                 position.en_passant = -1
                 position.zobrist_key = position.compute_zobrist()
-                score = -self.alphabeta(position, depth - 1 - 2, -beta, -beta + 1, ply + 1, False)
+                score = -self.alphabeta(position, depth - 1 - 2, -beta, -beta + 1, ply + 1, False, None)
                 position.side_to_move = saved_side
                 position.en_passant = saved_ep
                 position.zobrist_key = saved_key
@@ -398,7 +427,7 @@ class Searcher:
                 return -MATE_SCORE + ply
             return 0
 
-        ordered = self.ordered_moves(position, legal_moves, ply, tt_move)
+        ordered = self.ordered_moves(position, legal_moves, ply, tt_move, prev_move)
 
         orig_alpha = alpha
         best_move = None
@@ -455,11 +484,11 @@ class Searcher:
                 quiet_tried.append(move)
 
             if move_count == 1:
-                score = -self.alphabeta(position, depth - 1 + extension, -beta, -alpha, ply + 1, True)
+                score = -self.alphabeta(position, depth - 1 + extension, -beta, -alpha, ply + 1, True, move)
             else:
-                score = -self.alphabeta(position, depth - 1 - reduction + extension, -alpha - 1, -alpha, ply + 1, True)
+                score = -self.alphabeta(position, depth - 1 - reduction + extension, -alpha - 1, -alpha, ply + 1, True, move)
                 if score > alpha and score < beta:
-                    score = -self.alphabeta(position, depth - 1 + extension, -beta, -alpha, ply + 1, True)
+                    score = -self.alphabeta(position, depth - 1 + extension, -beta, -alpha, ply + 1, True, move)
 
             position.unmake_move(move, undo)
 
@@ -488,6 +517,8 @@ class Searcher:
                     for quiet in quiet_tried:
                         if quiet != move:
                             self.update_history(quiet, -bonus // 2)
+                    if prev_move is not None:
+                        self.countermoves[prev_move.from_sq][prev_move.to_sq] = move
                 self.store_tt(position.zobrist_key, depth, beta, TT_BETA, move, ply)
                 return beta
 

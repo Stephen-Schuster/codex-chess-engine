@@ -107,3 +107,19 @@ def test_set_hash_mb_resizes_and_clamps() -> None:
     searcher.set_hash_mb(99999)
     capped_size = searcher.max_tt_size
     assert capped_size >= medium_size
+
+
+def test_countermove_bonus_applies_in_move_ordering() -> None:
+    searcher = Searcher()
+    prev = Position.from_fen(Position.START_FEN).parse_uci_move("e2e4")
+    assert prev is not None
+
+    pos = Position.from_fen(Position.START_FEN)
+    cand = pos.parse_uci_move("g8f6")
+    alt = pos.parse_uci_move("g8h6")
+    assert cand is not None and alt is not None
+
+    searcher.countermoves[prev.from_sq][prev.to_sq] = cand
+    cand_score = searcher.score_move(pos, cand, ply=0, tt_move=None, prev_move=prev)
+    alt_score = searcher.score_move(pos, alt, ply=0, tt_move=None, prev_move=prev)
+    assert cand_score > alt_score

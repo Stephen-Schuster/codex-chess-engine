@@ -92,3 +92,18 @@ def test_insufficient_material_root_is_draw_score() -> None:
     pos = Position.from_fen("8/8/8/8/8/2k5/8/K7 w - - 0 1")
     _best, score, _elapsed = searcher.search(pos, SearchLimits(depth=3))
     assert score == 0
+
+
+def test_set_hash_mb_resizes_and_clamps() -> None:
+    searcher = Searcher()
+    searcher.set_hash_mb(0)
+    small_size = searcher.max_tt_size
+    assert small_size >= 2048
+
+    searcher.set_hash_mb(64)
+    medium_size = searcher.max_tt_size
+    assert medium_size > small_size
+
+    searcher.set_hash_mb(99999)
+    capped_size = searcher.max_tt_size
+    assert capped_size >= medium_size

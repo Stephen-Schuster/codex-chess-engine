@@ -38,3 +38,15 @@ def test_go_infinite_stop_returns_move() -> None:
 def test_go_movetime_returns_move() -> None:
     output = run_engine("uci\nposition startpos\ngo movetime 50\nquit\n")
     assert "bestmove " in output
+
+
+def test_uci_reports_hash_option() -> None:
+    output = run_engine("uci\nquit\n")
+    assert "option name Hash type spin" in output
+
+
+def test_setoption_hash_and_clear_hash() -> None:
+    output = run_engine(
+        "uci\nsetoption name Hash value 64\nsetoption name Clear Hash\nposition startpos\ngo depth 2\nquit\n"
+    )
+    assert "bestmove " in output

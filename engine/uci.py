@@ -15,6 +15,8 @@ class UCIEngine:
         self.search_thread: threading.Thread | None = None
         self.search_active = False
         self.search_position = self.position.copy()
+        self.hash_mb = 32
+        self.searcher.set_hash_mb(self.hash_mb)
 
     def _search_job(self, limits: SearchLimits) -> None:
         best_move, _, _ = self.searcher.search(self.search_position, limits)
@@ -111,12 +113,33 @@ class UCIEngine:
             if cmd == "uci":
                 print("id name OpenCodeEngine", flush=True)
                 print("id author OpenCode", flush=True)
+                print("option name Hash type spin default 32 min 1 max 1024", flush=True)
+                print("option name Clear Hash type button", flush=True)
                 print("uciok", flush=True)
             elif cmd == "isready":
                 print("readyok", flush=True)
             elif cmd == "ucinewgame":
                 self.position = Position.from_fen(Position.START_FEN)
                 self.searcher.clear()
+            elif cmd == "setoption":
+                if len(args) >= 2 and args[0] == "name":
+                    # Parse: setoption name <name> [value <value>]
+                    value_idx = None
+                    for idx, token in enumerate(args):
+                        if token == "value":
+                            value_idx = idx
+                            break
+                    name_tokens = args[1:value_idx] if value_idx is not None else args[1:]
+                    name = " ".join(name_tokens)
+                    value = " ".join(args[value_idx + 1 :]) if value_idx is not None else ""
+                    if name == "Hash":
+                        try:
+                            self.hash_mb = int(value)
+                            self.searcher.set_hash_mb(self.hash_mb)
+                        except ValueError:
+                            pass
+                    elif name == "Clear Hash":
+                        self.searcher.tt.clear()
             elif cmd == "position":
                 self.handle_position(args)
             elif cmd == "go":

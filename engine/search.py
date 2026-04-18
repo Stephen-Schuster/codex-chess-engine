@@ -66,6 +66,13 @@ class Searcher:
         self.killers = [[None, None] for _ in range(MAX_PLY)]
         self.history = [[0 for _ in range(64)] for _ in range(64)]
 
+    def set_hash_mb(self, mb: int) -> None:
+        mb = max(1, min(1024, mb))
+        # Roughly budget around 64 bytes per entry in Python runtime.
+        self.max_tt_size = max(2048, (mb * 1024 * 1024) // 64)
+        if len(self.tt) > self.max_tt_size:
+            self.tt.clear()
+
     def update_history(self, move: Move, delta: int) -> None:
         cur = self.history[move.from_sq][move.to_sq]
         cur += delta

@@ -150,6 +150,13 @@ def test_lmp_keeps_tactical_captures() -> None:
     assert best is not None
 
 
+def test_quiescence_writes_tt_entry() -> None:
+    searcher = Searcher()
+    pos = Position.from_fen("4k3/8/8/3q4/3Q4/8/8/4K3 w - - 0 1")
+    _ = searcher.quiescence(pos, -1_000_000, 1_000_000, 0)
+    assert pos.zobrist_key in searcher.tt
+
+
 def test_root_repetition_is_draw() -> None:
     searcher = Searcher()
     pos = Position.from_fen(Position.START_FEN)

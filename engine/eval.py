@@ -485,6 +485,28 @@ def evaluate(position: Position) -> int:
     # Tempo bonus to side to move.
     mg_score += 8 if position.side_to_move == WHITE else -8
 
+    # King centralization in endgames.
+    wk = position.king_square(WHITE)
+    bk = position.king_square(BLACK)
+    wk_file = wk % 8
+    wk_rank = wk // 8
+    bk_file = bk % 8
+    bk_rank = bk // 8
+
+    def center_distance(file: int, rank: int) -> int:
+        # Manhattan distance to nearest center square among d4/e4/d5/e5.
+        centers = [(3, 3), (4, 3), (3, 4), (4, 4)]
+        best = 99
+        for cf, cr in centers:
+            d = abs(file - cf) + abs(rank - cr)
+            if d < best:
+                best = d
+        return best
+
+    wk_dist = center_distance(wk_file, wk_rank)
+    bk_dist = center_distance(bk_file, bk_rank)
+    eg_score += (bk_dist - wk_dist) * 8
+
     # King shelter (simple): count friendly pawns near king file/rank in middlegame.
     try:
         white_king = position.king_square(WHITE)

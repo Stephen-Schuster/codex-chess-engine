@@ -303,6 +303,18 @@ class Searcher:
         if position.halfmove_clock >= 100 or position.is_threefold_repetition() or position.is_insufficient_material():
             return 0
 
+        tt_entry = self.tt.get(position.zobrist_key)
+        tt_move: Optional[Move] = None
+        if tt_entry and tt_entry.depth == 0:
+            tt_move = tt_entry.move
+            tt_score = self.score_from_tt(tt_entry.score, ply)
+            if tt_entry.flag == TT_EXACT:
+                return tt_score
+            if tt_entry.flag == TT_ALPHA and tt_score <= alpha:
+                return tt_score
+            if tt_entry.flag == TT_BETA and tt_score >= beta:
+                return tt_score
+
         self.nodes += 1
         in_check = position.in_check(position.side_to_move)
         if in_check:
@@ -318,8 +330,10 @@ class Searcher:
             moves = position.generate_legal_moves()
         else:
             moves = [m for m in position.generate_pseudo_legal_moves() if m.is_capture or m.promotion]
-            moves = self.ordered_moves(position, moves, ply, None, None)
+            moves = self.ordered_moves(position, moves, ply, tt_move, None)
 
+        orig_alpha = alpha
+        best_move: Optional[Move] = None
         searched_any = False
         for move in moves:
             if not in_check and move.is_capture and not move.promotion:
@@ -347,9 +361,17 @@ class Searcher:
                 return beta
             if score > alpha:
                 alpha = score
+                best_move = move
 
         if in_check and not searched_any:
             return -MATE_SCORE + ply
+
+        qflag = TT_EXACT
+        if alpha <= orig_alpha:
+            qflag = TT_ALPHA
+        elif alpha >= beta:
+            qflag = TT_BETA
+        self.store_tt(position.zobrist_key, 0, alpha, qflag, best_move, ply)
 
         return alpha
 

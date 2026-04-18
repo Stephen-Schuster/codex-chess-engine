@@ -61,3 +61,10 @@ def test_rook_behind_passed_pawn_bonus() -> None:
     behind = Position.from_fen("4k3/8/8/8/8/8/4P3/4R1K1 w - - 0 1")
     side = Position.from_fen("4k3/8/8/8/8/8/4P3/1R4K1 w - - 0 1")
     assert evaluate(behind) > evaluate(side)
+
+
+def test_king_centralization_endgame_bonus() -> None:
+    # Keep one pawn each so eval does not hit king-only fast path.
+    centered = Position.from_fen("7k/p7/8/3K4/8/8/P7/8 w - - 0 1")
+    not_centered = Position.from_fen("7k/p7/8/8/8/8/P7/3K4 w - - 0 1")
+    assert evaluate(centered) > evaluate(not_centered)

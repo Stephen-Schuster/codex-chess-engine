@@ -59,6 +59,7 @@ class Searcher:
         self.history = [[0 for _ in range(64)] for _ in range(64)]
         self.pv_table: List[List[Optional[Move]]] = [[None for _ in range(MAX_PLY)] for _ in range(MAX_PLY)]
         self.pv_length: List[int] = [0 for _ in range(MAX_PLY)]
+        self.search_counter = 0
 
     def clear(self) -> None:
         self.tt.clear()
@@ -73,6 +74,12 @@ class Searcher:
         elif cur < -20000:
             cur = -20000
         self.history[move.from_sq][move.to_sq] = cur
+
+    def age_history(self) -> None:
+        for from_sq in range(64):
+            row = self.history[from_sq]
+            for to_sq in range(64):
+                row[to_sq] = row[to_sq] // 2
 
     def should_stop(self) -> bool:
         if self.stop:
@@ -105,6 +112,10 @@ class Searcher:
         return budget
 
     def search(self, position: Position, limits: SearchLimits) -> Tuple[Optional[Move], int, int]:
+        self.search_counter += 1
+        if self.search_counter % 16 == 0:
+            self.age_history()
+
         self.nodes = 0
         self.stop = False
         self.start_time = time.time()
@@ -379,6 +390,8 @@ class Searcher:
             reduction = 0
             if move_count > 4 and depth >= 3 and not in_check and not move.is_capture and not move.promotion and extension == 0:
                 reduction = 1
+                if depth >= 5 and move_count > 10:
+                    reduction = 2
 
             if move_count > 10 and depth <= 3 and not in_check and not move.is_capture and not move.promotion:
                 position.unmake_move(move, undo)

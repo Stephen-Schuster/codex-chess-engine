@@ -30,3 +30,16 @@ def test_history_update_is_bounded() -> None:
     for _ in range(4000):
         searcher.update_history(move, -100)
     assert searcher.history[move.from_sq][move.to_sq] >= -20000
+
+
+def test_history_aging_reduces_magnitude() -> None:
+    searcher = Searcher()
+    pos = Position.from_fen(Position.START_FEN)
+    move = pos.parse_uci_move("g1f3")
+    assert move is not None
+
+    searcher.update_history(move, 1000)
+    before = searcher.history[move.from_sq][move.to_sq]
+    searcher.age_history()
+    after = searcher.history[move.from_sq][move.to_sq]
+    assert abs(after) <= abs(before)

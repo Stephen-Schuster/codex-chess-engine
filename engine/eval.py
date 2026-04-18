@@ -293,6 +293,41 @@ def evaluate(position: Position) -> int:
                 mg_score -= bonus
                 eg_score -= bonus * 2
 
+    # King shelter (simple): count friendly pawns near king file/rank in middlegame.
+    try:
+        white_king = position.king_square(WHITE)
+        black_king = position.king_square(BLACK)
+    except ValueError:
+        phase = min(24, phase)
+        score = (mg_score * phase + eg_score * (24 - phase)) // 24
+        return score if position.side_to_move == WHITE else -score
+    wk_rank = white_king // 8
+    wk_file = white_king % 8
+    bk_rank = black_king // 8
+    bk_file = black_king % 8
+
+    white_shelter = 0
+    black_shelter = 0
+    for df in (-1, 0, 1):
+        f = wk_file + df
+        if 0 <= f < 8:
+            for dr in (1, 2):
+                r = wk_rank + dr
+                if 0 <= r < 8:
+                    tp = position.board[r * 8 + f]
+                    if tp != EMPTY and piece_color(tp) == WHITE and piece_type(tp) == PAWN:
+                        white_shelter += 1
+        f = bk_file + df
+        if 0 <= f < 8:
+            for dr in (-1, -2):
+                r = bk_rank + dr
+                if 0 <= r < 8:
+                    tp = position.board[r * 8 + f]
+                    if tp != EMPTY and piece_color(tp) == BLACK and piece_type(tp) == PAWN:
+                        black_shelter += 1
+
+    mg_score += (white_shelter - black_shelter) * 9
+
     mg_score += (mobility_white - mobility_black) * 2
     eg_score += (mobility_white - mobility_black)
 

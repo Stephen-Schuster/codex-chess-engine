@@ -12,3 +12,9 @@ def test_doubled_pawn_penalty() -> None:
     doubled = Position.from_fen("8/8/8/8/8/P7/P7/4K3 w - - 0 1")
     split = Position.from_fen("8/8/8/8/8/P7/1P6/4K3 w - - 0 1")
     assert evaluate(split) > evaluate(doubled)
+
+
+def test_king_shelter_bonus() -> None:
+    sheltered = Position.from_fen("8/8/8/8/8/5PPP/8/6K1 w - - 0 1")
+    exposed = Position.from_fen("8/8/8/8/8/8/8/6K1 w - - 0 1")
+    assert evaluate(sheltered) > evaluate(exposed)

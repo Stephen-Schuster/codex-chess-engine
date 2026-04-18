@@ -81,6 +81,8 @@ class Searcher:
             return max(10, limits.movetime_ms)
         if limits.infinite:
             return 0
+        if limits.depth > 0 and limits.wtime_ms == 0 and limits.btime_ms == 0 and limits.nodes == 0:
+            return 0
 
         remaining = limits.wtime_ms if position.side_to_move == 0 else limits.btime_ms
         inc = limits.winc_ms if position.side_to_move == 0 else limits.binc_ms
@@ -105,8 +107,10 @@ class Searcher:
         max_depth = limits.depth if limits.depth > 0 else 64
         best_move: Optional[Move] = None
         best_score = -INFINITY
+        fallback_moves = position.generate_legal_moves()
+        if not fallback_moves:
+            return None, 0, 1
 
-        aspiration = 35
         prev_score = 0
 
         for depth in range(1, max_depth + 1):
@@ -115,6 +119,7 @@ class Searcher:
 
             alpha = -INFINITY
             beta = INFINITY
+            aspiration = 35
 
             if depth >= 4:
                 alpha = prev_score - aspiration
@@ -161,6 +166,8 @@ class Searcher:
                 break
 
         elapsed = max(1, int((time.time() - self.start_time) * 1000))
+        if best_move is None:
+            best_move = fallback_moves[0]
         return best_move, best_score, elapsed
 
     def score_move(self, position: Position, move: Move, ply: int, tt_move: Optional[Move]) -> int:
@@ -206,16 +213,29 @@ class Searcher:
             return 0
 
         self.nodes += 1
-        stand_pat = evaluate(position)
-        if stand_pat >= beta:
-            return beta
-        if stand_pat > alpha:
-            alpha = stand_pat
+        in_check = position.in_check(position.side_to_move)
+        if in_check:
+            stand_pat = -INFINITY
+        else:
+            stand_pat = evaluate(position)
+            if stand_pat >= beta:
+                return beta
+            if stand_pat > alpha:
+                alpha = stand_pat
 
-        moves = [m for m in position.generate_pseudo_legal_moves() if m.is_capture or m.promotion]
-        moves = self.ordered_moves(position, moves, ply, None)
+        if in_check:
+            moves = position.generate_legal_moves()
+        else:
+            moves = [m for m in position.generate_pseudo_legal_moves() if m.is_capture or m.promotion]
+            moves = self.ordered_moves(position, moves, ply, None)
 
         for move in moves:
+            if not in_check and move.is_capture and not move.promotion:
+                victim = position.board[move.to_sq]
+                victim_value = 100 if move.is_en_passant else (0 if victim == EMPTY else evaluate_capture_value(piece_type(victim)))
+                if stand_pat + victim_value + 90 < alpha:
+                    continue
+
             undo = position.make_move(move)
             if position.in_check(1 - position.side_to_move):
                 position.unmake_move(move, undo)
@@ -293,6 +313,9 @@ class Searcher:
 
         # Reverse futility pruning in quiet positions
         if depth <= 3 and not in_check and static_eval - 90 * depth >= beta:
+            return static_eval
+
+        if depth <= 2 and not in_check and static_eval + 80 * depth <= alpha:
             return static_eval
 
         legal_moves = position.generate_legal_moves()

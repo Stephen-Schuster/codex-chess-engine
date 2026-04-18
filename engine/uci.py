@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import threading
 from typing import List
 
 from .chess_state import Position
@@ -11,6 +12,18 @@ class UCIEngine:
     def __init__(self) -> None:
         self.position = Position.from_fen(Position.START_FEN)
         self.searcher = Searcher()
+        self.search_thread: threading.Thread | None = None
+        self.search_active = False
+        self.search_position = self.position.copy()
+
+    def _search_job(self, limits: SearchLimits) -> None:
+        best_move, _, _ = self.searcher.search(self.search_position, limits)
+        if best_move is None:
+            best_str = "0000"
+        else:
+            best_str = best_move.to_uci()
+        print(f"bestmove {best_str}", flush=True)
+        self.search_active = False
 
     def handle_position(self, tokens: List[str]) -> None:
         if not tokens:
@@ -71,11 +84,19 @@ class UCIEngine:
             else:
                 i += 1
 
-        best_move, _, _ = self.searcher.search(self.position, limits)
-        if best_move is None:
-            print("bestmove 0000", flush=True)
-            return
-        print(f"bestmove {best_move.to_uci()}", flush=True)
+        if self.search_active:
+            self.searcher.stop = True
+            if self.search_thread is not None:
+                self.search_thread.join()
+
+        self.searcher.stop = False
+        self.search_position = self.position.copy()
+        self.search_active = True
+        self.search_thread = threading.Thread(target=self._search_job, args=(limits,), daemon=True)
+        self.search_thread.start()
+
+        if not limits.infinite:
+            self.search_thread.join()
 
     def loop(self) -> None:
         for raw in sys.stdin:
@@ -102,7 +123,12 @@ class UCIEngine:
                 self.handle_go(args)
             elif cmd == "stop":
                 self.searcher.stop = True
+                if self.search_thread is not None:
+                    self.search_thread.join()
             elif cmd == "quit":
+                self.searcher.stop = True
+                if self.search_thread is not None:
+                    self.search_thread.join()
                 return
 
 

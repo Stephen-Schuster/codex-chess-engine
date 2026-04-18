@@ -32,3 +32,11 @@ def test_kiwipete_perft_depth_3() -> None:
     fen = "r3k2r/p1ppqpb1/bn2pnp1/2P5/1p2P3/2N2N2/PPQ1BPPP/R1B1K2R w KQkq - 0 1"
     pos = Position.from_fen(fen)
     assert perft(pos, 3) == 86279
+
+
+def test_no_king_capture_moves_generated() -> None:
+    # White queen attacks black king along e-file.
+    fen = "4k3/8/8/8/4Q3/8/8/4K3 b - - 0 1"
+    pos = Position.from_fen(fen)
+    moves = [m.to_uci() for m in pos.generate_legal_moves()]
+    assert "e8e4" not in moves

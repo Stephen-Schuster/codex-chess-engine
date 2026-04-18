@@ -23,3 +23,18 @@ def test_uci_handshake() -> None:
 def test_go_depth_returns_move() -> None:
     output = run_engine("uci\nposition startpos\ngo depth 2\nquit\n")
     assert "bestmove " in output
+
+
+def test_go_nodes_returns_move() -> None:
+    output = run_engine("uci\nposition startpos\ngo nodes 500\nquit\n")
+    assert "bestmove " in output
+
+
+def test_go_infinite_stop_returns_move() -> None:
+    output = run_engine("uci\nposition startpos\ngo infinite\nstop\nquit\n")
+    assert "bestmove " in output
+
+
+def test_go_movetime_returns_move() -> None:
+    output = run_engine("uci\nposition startpos\ngo movetime 50\nquit\n")
+    assert "bestmove " in output

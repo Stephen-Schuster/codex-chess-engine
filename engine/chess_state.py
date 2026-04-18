@@ -388,7 +388,7 @@ class Position:
                         continue
                     tsq = cr * 8 + cf
                     tp = self.board[tsq]
-                    if tp != EMPTY and piece_color(tp) != side:
+                    if tp != EMPTY and piece_color(tp) != side and piece_type(tp) != KING:
                         if cr == promotion_rank:
                             for promo in (QUEEN, ROOK, BISHOP, KNIGHT):
                                 yield Move(sq, tsq, promotion=promo, is_capture=True)
@@ -415,7 +415,7 @@ class Position:
                     tp = self.board[tsq]
                     if tp == EMPTY:
                         yield Move(sq, tsq)
-                    elif piece_color(tp) != side:
+                    elif piece_color(tp) != side and piece_type(tp) != KING:
                         yield Move(sq, tsq, is_capture=True)
 
             elif ptype in (BISHOP, ROOK, QUEEN):
@@ -433,7 +433,7 @@ class Position:
                         if tp == EMPTY:
                             yield Move(sq, tsq)
                         else:
-                            if piece_color(tp) != side:
+                            if piece_color(tp) != side and piece_type(tp) != KING:
                                 yield Move(sq, tsq, is_capture=True)
                             break
                         r += dr
@@ -451,7 +451,7 @@ class Position:
                         tp = self.board[tsq]
                         if tp == EMPTY:
                             yield Move(sq, tsq)
-                        elif piece_color(tp) != side:
+                        elif piece_color(tp) != side and piece_type(tp) != KING:
                             yield Move(sq, tsq, is_capture=True)
 
                 # Castling

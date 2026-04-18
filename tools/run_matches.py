@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import math
 import os
 import random
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -19,8 +21,18 @@ class MatchResult:
     wins_black: int = 0
     draws: int = 0
 
+    def games(self) -> int:
+        return self.wins_white + self.wins_black + self.draws
 
-def play_one_game(depth_white: int, depth_black: int, max_plies: int, seed: int) -> int:
+
+def play_one_game(
+    depth_white: int,
+    depth_black: int,
+    max_plies: int,
+    seed: int,
+    nodes_per_move: int,
+    movetime_ms: int,
+) -> int:
     random.seed(seed)
     position = Position.from_fen(Position.START_FEN)
     search_white = Searcher()
@@ -39,9 +51,15 @@ def play_one_game(depth_white: int, depth_black: int, max_plies: int, seed: int)
             return 0
 
         if position.side_to_move == 0:
-            move, _, _ = search_white.search(position, SearchLimits(depth=depth_white))
+            move, _, _ = search_white.search(
+                position,
+                SearchLimits(depth=depth_white, nodes=nodes_per_move, movetime_ms=movetime_ms),
+            )
         else:
-            move, _, _ = search_black.search(position, SearchLimits(depth=depth_black))
+            move, _, _ = search_black.search(
+                position,
+                SearchLimits(depth=depth_black, nodes=nodes_per_move, movetime_ms=movetime_ms),
+            )
 
         if move is None:
             move = random.choice(legal)
@@ -63,12 +81,19 @@ def play_one_game(depth_white: int, depth_black: int, max_plies: int, seed: int)
     return 0
 
 
-def run_matches(games: int, depth_a: int, depth_b: int, max_plies: int) -> MatchResult:
+def run_matches(
+    games: int,
+    depth_a: int,
+    depth_b: int,
+    max_plies: int,
+    nodes_per_move: int,
+    movetime_ms: int,
+) -> MatchResult:
     result = MatchResult()
     for game in range(games):
         # Alternate colors each game.
         if game % 2 == 0:
-            outcome = play_one_game(depth_a, depth_b, max_plies, seed=game + 11)
+            outcome = play_one_game(depth_a, depth_b, max_plies, seed=game + 11, nodes_per_move=nodes_per_move, movetime_ms=movetime_ms)
             if outcome > 0:
                 result.wins_white += 1
             elif outcome < 0:
@@ -76,13 +101,18 @@ def run_matches(games: int, depth_a: int, depth_b: int, max_plies: int) -> Match
             else:
                 result.draws += 1
         else:
-            outcome = play_one_game(depth_b, depth_a, max_plies, seed=game + 11)
+            outcome = play_one_game(depth_b, depth_a, max_plies, seed=game + 11, nodes_per_move=nodes_per_move, movetime_ms=movetime_ms)
             if outcome > 0:
                 result.wins_black += 1
             elif outcome < 0:
                 result.wins_white += 1
             else:
                 result.draws += 1
+
+        print(
+            f"progress game={game + 1}/{games} wins={result.wins_white} losses={result.wins_black} draws={result.draws}",
+            flush=True,
+        )
 
     return result
 
@@ -101,16 +131,41 @@ def main() -> None:
     parser.add_argument("--depth-a", type=int, default=3)
     parser.add_argument("--depth-b", type=int, default=2)
     parser.add_argument("--max-plies", type=int, default=140)
+    parser.add_argument("--nodes-per-move", type=int, default=1500)
+    parser.add_argument("--movetime-ms", type=int, default=0)
+    parser.add_argument("--output", default="/workspace/game_data/selfplay_results.csv")
     args = parser.parse_args()
 
-    result = run_matches(args.games, args.depth_a, args.depth_b, args.max_plies)
-    total = result.wins_white + result.wins_black + result.draws
+    result = run_matches(
+        args.games,
+        args.depth_a,
+        args.depth_b,
+        args.max_plies,
+        args.nodes_per_move,
+        args.movetime_ms,
+    )
+    total = result.games()
     score = (result.wins_white + 0.5 * result.draws) / max(1, total)
     elo = elo_from_score(score)
 
-    print(
-        f"matches games={total} wins={result.wins_white} losses={result.wins_black} draws={result.draws} score={score:.3f} elo~{elo:.1f}"
+    summary = (
+        f"matches games={total} wins={result.wins_white} losses={result.wins_black} "
+        f"draws={result.draws} score={score:.3f} elo~{elo:.1f} "
+        f"nodes_per_move={args.nodes_per_move} movetime_ms={args.movetime_ms}"
     )
+    print(summary)
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    is_new = not output_path.exists()
+    with output_path.open("a", encoding="ascii") as f:
+        if is_new:
+            f.write("timestamp,games,depth_a,depth_b,max_plies,nodes_per_move,movetime_ms,wins,losses,draws,score,elo\n")
+        f.write(
+            f"{dt.datetime.now(dt.UTC).isoformat()},{total},{args.depth_a},{args.depth_b},{args.max_plies},"
+            f"{args.nodes_per_move},{args.movetime_ms},{result.wins_white},{result.wins_black},{result.draws},"
+            f"{score:.3f},{elo:.1f}\n"
+        )
 
 
 if __name__ == "__main__":

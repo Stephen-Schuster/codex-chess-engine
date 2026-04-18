@@ -18,3 +18,10 @@ def test_king_shelter_bonus() -> None:
     sheltered = Position.from_fen("8/8/8/8/8/5PPP/8/6K1 w - - 0 1")
     exposed = Position.from_fen("8/8/8/8/8/8/8/6K1 w - - 0 1")
     assert evaluate(sheltered) > evaluate(exposed)
+
+
+def test_knight_outpost_bonus() -> None:
+    # White knight on d5 supported by e4 pawn and no black c/e-pawn to challenge.
+    outpost = Position.from_fen("4k3/8/8/3N4/4P3/8/8/4K3 w - - 0 1")
+    no_support = Position.from_fen("4k3/8/8/3N4/8/8/8/4K3 w - - 0 1")
+    assert evaluate(outpost) > evaluate(no_support)

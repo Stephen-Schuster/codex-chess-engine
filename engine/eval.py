@@ -293,6 +293,69 @@ def evaluate(position: Position) -> int:
                 mg_score -= bonus
                 eg_score -= bonus * 2
 
+    # Knight outpost bonus (very lightweight): supported by pawn and not attacked by enemy pawn.
+    for sq, p in enumerate(position.board):
+        if p == EMPTY or piece_type(p) != KNIGHT:
+            continue
+        color = piece_color(p)
+        rank = sq // 8
+        file = sq % 8
+
+        if color == WHITE:
+            if rank < 3:
+                continue
+            supported = False
+            for df in (-1, 1):
+                f = file + df
+                r = rank - 1
+                if 0 <= f < 8 and 0 <= r < 8:
+                    tp = position.board[r * 8 + f]
+                    if tp != EMPTY and piece_color(tp) == WHITE and piece_type(tp) == PAWN:
+                        supported = True
+                        break
+            attacked_by_pawn = False
+            for df in (-1, 1):
+                f = file + df
+                for r in range(rank + 1, 8):
+                    if 0 <= f < 8:
+                        tp = position.board[r * 8 + f]
+                        if tp != EMPTY and piece_color(tp) == BLACK:
+                            if piece_type(tp) == PAWN:
+                                attacked_by_pawn = True
+                            break
+                if attacked_by_pawn:
+                    break
+            if supported and not attacked_by_pawn:
+                mg_score += 24
+                eg_score += 10
+        else:
+            if rank > 4:
+                continue
+            supported = False
+            for df in (-1, 1):
+                f = file + df
+                r = rank + 1
+                if 0 <= f < 8 and 0 <= r < 8:
+                    tp = position.board[r * 8 + f]
+                    if tp != EMPTY and piece_color(tp) == BLACK and piece_type(tp) == PAWN:
+                        supported = True
+                        break
+            attacked_by_pawn = False
+            for df in (-1, 1):
+                f = file + df
+                for r in range(rank - 1, -1, -1):
+                    if 0 <= f < 8:
+                        tp = position.board[r * 8 + f]
+                        if tp != EMPTY and piece_color(tp) == WHITE:
+                            if piece_type(tp) == PAWN:
+                                attacked_by_pawn = True
+                            break
+                if attacked_by_pawn:
+                    break
+            if supported and not attacked_by_pawn:
+                mg_score -= 24
+                eg_score -= 10
+
     # King shelter (simple): count friendly pawns near king file/rank in middlegame.
     try:
         white_king = position.king_square(WHITE)

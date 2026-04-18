@@ -399,10 +399,27 @@ class Searcher:
                 position.unmake_move(move, undo)
                 continue
 
+            gives_check = position.in_check(position.side_to_move)
+
             extension = 0
             # Simple check extension for forcing lines
-            if depth >= 3 and position.in_check(position.side_to_move) and ply < MAX_PLY - 4:
+            if depth >= 3 and gives_check and ply < MAX_PLY - 4:
                 extension = 1
+
+            # Futility pruning for quiet non-check moves near the frontier.
+            if (
+                depth <= 2
+                and not in_check
+                and not gives_check
+                and not move.is_capture
+                and not move.promotion
+                and alpha > -MATE_SCORE + 1000
+                and beta < MATE_SCORE - 1000
+            ):
+                futility_margin = 120 * depth
+                if static_eval + futility_margin <= alpha:
+                    position.unmake_move(move, undo)
+                    continue
 
             reduction = 0
             if move_count > 4 and depth >= 3 and not in_check and not move.is_capture and not move.promotion and extension == 0:

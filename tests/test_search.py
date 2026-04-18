@@ -65,3 +65,14 @@ def test_losing_capture_gets_lower_order_score() -> None:
     quiet_score = searcher.score_move(pos, quiet, ply=0, tt_move=None)
     assert cap_score < 1_000_000
     assert cap_score > quiet_score
+
+
+def test_futility_pruning_keeps_tactical_checks() -> None:
+    searcher = Searcher()
+    # White to move has checking move Qe7+ in a quiet-ish material edge case.
+    pos = Position.from_fen("4k3/8/8/8/8/8/4Q3/4K3 w - - 0 1")
+    move = pos.parse_uci_move("e2e7")
+    assert move is not None
+    assert move in pos.generate_legal_moves()
+    best, _score, _elapsed = searcher.search(pos, SearchLimits(depth=3, nodes=800))
+    assert best is not None

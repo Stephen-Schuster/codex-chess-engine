@@ -65,6 +65,15 @@ class Searcher:
         self.killers = [[None, None] for _ in range(MAX_PLY)]
         self.history = [[0 for _ in range(64)] for _ in range(64)]
 
+    def update_history(self, move: Move, delta: int) -> None:
+        cur = self.history[move.from_sq][move.to_sq]
+        cur += delta
+        if cur > 20000:
+            cur = 20000
+        elif cur < -20000:
+            cur = -20000
+        self.history[move.from_sq][move.to_sq] = cur
+
     def should_stop(self) -> bool:
         if self.stop:
             return True
@@ -353,6 +362,7 @@ class Searcher:
         best_score = -INFINITY
 
         move_count = 0
+        quiet_tried: List[Move] = []
         for move in ordered:
             move_count += 1
             undo = position.make_move(move)
@@ -378,6 +388,9 @@ class Searcher:
                 if not self.static_exchange_ok(position, move, margin=-20):
                     position.unmake_move(move, undo)
                     continue
+
+            if not move.is_capture and not move.promotion:
+                quiet_tried.append(move)
 
             if move_count == 1:
                 score = -self.alphabeta(position, depth - 1 + extension, -beta, -alpha, ply + 1, True)
@@ -408,7 +421,11 @@ class Searcher:
                     if k0 != move:
                         self.killers[ply][1] = k0
                         self.killers[ply][0] = move
-                    self.history[move.from_sq][move.to_sq] += depth * depth
+                    bonus = depth * depth * 8
+                    self.update_history(move, bonus)
+                    for quiet in quiet_tried:
+                        if quiet != move:
+                            self.update_history(quiet, -bonus // 2)
                 self.store_tt(position.zobrist_key, depth, beta, TT_BETA, move)
                 return beta
 

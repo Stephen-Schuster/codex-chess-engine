@@ -16,6 +16,7 @@ from .eval import evaluate
 
 MATE_SCORE = 100000
 INFINITY = 1_000_000
+MAX_PLY = 256
 
 
 @dataclass
@@ -51,16 +52,17 @@ class Searcher:
         self.stop_time = 0.0
         self.stop = False
         self.node_limit = 0
+        self.print_info = True
         self.tt: Dict[int, TTEntry] = {}
         self.max_tt_size = 1_000_000
-        self.killers: List[List[Optional[Move]]] = [[None, None] for _ in range(128)]
+        self.killers: List[List[Optional[Move]]] = [[None, None] for _ in range(MAX_PLY)]
         self.history = [[0 for _ in range(64)] for _ in range(64)]
-        self.pv_table: List[List[Optional[Move]]] = [[None for _ in range(128)] for _ in range(128)]
-        self.pv_length: List[int] = [0 for _ in range(128)]
+        self.pv_table: List[List[Optional[Move]]] = [[None for _ in range(MAX_PLY)] for _ in range(MAX_PLY)]
+        self.pv_length: List[int] = [0 for _ in range(MAX_PLY)]
 
     def clear(self) -> None:
         self.tt.clear()
-        self.killers = [[None, None] for _ in range(128)]
+        self.killers = [[None, None] for _ in range(MAX_PLY)]
         self.history = [[0 for _ in range(64)] for _ in range(64)]
 
     def should_stop(self) -> bool:
@@ -149,7 +151,11 @@ class Searcher:
                     break
                 pv_moves.append(mv.to_uci())
             pv = " ".join(pv_moves)
-            print(f"info depth {depth} score cp {best_score} nodes {self.nodes} nps {nps} time {elapsed_ms} pv {pv}", flush=True)
+            if self.print_info:
+                print(
+                    f"info depth {depth} score cp {best_score} nodes {self.nodes} nps {nps} time {elapsed_ms} pv {pv}",
+                    flush=True,
+                )
 
             if abs(best_score) > MATE_SCORE - 1000:
                 break
@@ -194,6 +200,8 @@ class Searcher:
         self.tt[key] = TTEntry(depth=depth, score=score, flag=flag, move=move)
 
     def quiescence(self, position: Position, alpha: int, beta: int, ply: int) -> int:
+        if ply >= MAX_PLY - 1:
+            return evaluate(position)
         if self.should_stop():
             return 0
 
@@ -227,6 +235,8 @@ class Searcher:
         return alpha
 
     def alphabeta(self, position: Position, depth: int, alpha: int, beta: int, ply: int, allow_null: bool) -> int:
+        if ply >= MAX_PLY - 1:
+            return evaluate(position)
         self.pv_length[ply] = ply
         if self.should_stop():
             return 0
@@ -308,7 +318,7 @@ class Searcher:
 
             extension = 0
             # Simple check extension for forcing lines
-            if position.in_check(position.side_to_move):
+            if depth >= 3 and position.in_check(position.side_to_move) and ply < MAX_PLY - 4:
                 extension = 1
 
             reduction = 0

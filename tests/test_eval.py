@@ -49,3 +49,9 @@ def test_rook_on_seventh_bonus() -> None:
 def test_king_only_is_draw_eval() -> None:
     pos = Position.from_fen("8/8/8/8/8/2k5/8/K7 w - - 0 1")
     assert evaluate(pos) == 0
+
+
+def test_tempo_bonus_side_to_move() -> None:
+    white_to_move = Position.from_fen("4k3/8/8/8/8/8/8/4K3 w - - 0 1")
+    black_to_move = Position.from_fen("4k3/8/8/8/8/8/8/4K3 b - - 0 1")
+    assert evaluate(white_to_move) >= evaluate(black_to_move)

@@ -398,6 +398,13 @@ class Searcher:
                 if tt_entry.flag == TT_BETA and tt_score >= beta:
                     return tt_score
 
+        # Internal iterative deepening to improve move ordering when TT has no move.
+        if tt_move is None and depth >= 5 and not in_check:
+            _ = self.alphabeta(position, depth - 2, alpha, beta, ply, allow_null, prev_move)
+            iid_entry = self.tt.get(position.zobrist_key)
+            if iid_entry and iid_entry.move is not None:
+                tt_move = iid_entry.move
+
         # Null move pruning
         if allow_null and depth >= 3 and not in_check and static_eval >= beta - 75:
             has_non_pawn = any(

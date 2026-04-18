@@ -435,6 +435,9 @@ def evaluate(position: Position) -> int:
             mg_score -= 20
             eg_score -= 25
 
+    # Tempo bonus to side to move.
+    mg_score += 8 if position.side_to_move == WHITE else -8
+
     # King shelter (simple): count friendly pawns near king file/rank in middlegame.
     try:
         white_king = position.king_square(WHITE)

@@ -133,6 +133,13 @@ def test_razoring_does_not_break_forcing_tactics() -> None:
     assert best is not None
 
 
+def test_iid_finds_move_and_search_completes() -> None:
+    searcher = Searcher()
+    pos = Position.from_fen(Position.START_FEN)
+    best, _score, _elapsed = searcher.search(pos, SearchLimits(depth=6, nodes=2500))
+    assert best is not None
+
+
 def test_root_repetition_is_draw() -> None:
     searcher = Searcher()
     pos = Position.from_fen(Position.START_FEN)

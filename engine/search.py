@@ -203,6 +203,8 @@ class Searcher:
                 victim_value = 0 if victim == EMPTY else evaluate_capture_value(piece_type(victim))
             attacker_value = evaluate_capture_value(piece_type(position.board[move.from_sq]))
             score = 1_000_000 + 10 * victim_value - attacker_value
+            if not self.static_exchange_ok(position, move, margin=0):
+                score -= 200_000
         else:
             k0, k1 = self.killers[ply]
             if k0 and move == k0:
@@ -220,6 +222,20 @@ class Searcher:
     def ordered_moves(self, position: Position, moves: List[Move], ply: int, tt_move: Optional[Move]) -> List[Move]:
         return sorted(moves, key=lambda m: self.score_move(position, m, ply, tt_move), reverse=True)
 
+    def score_to_tt(self, score: int, ply: int) -> int:
+        if score > MATE_SCORE - 1000:
+            return score + ply
+        if score < -MATE_SCORE + 1000:
+            return score - ply
+        return score
+
+    def score_from_tt(self, score: int, ply: int) -> int:
+        if score > MATE_SCORE - 1000:
+            return score - ply
+        if score < -MATE_SCORE + 1000:
+            return score + ply
+        return score
+
     def static_exchange_ok(self, position: Position, move: Move, margin: int = -30) -> bool:
         if not move.is_capture and not move.is_en_passant:
             return True
@@ -232,7 +248,7 @@ class Searcher:
         attacker_value = evaluate_capture_value(piece_type(attacker))
         return victim_value - attacker_value >= margin
 
-    def store_tt(self, key: int, depth: int, score: int, flag: int, move: Optional[Move]) -> None:
+    def store_tt(self, key: int, depth: int, score: int, flag: int, move: Optional[Move], ply: int) -> None:
         if len(self.tt) >= self.max_tt_size and key not in self.tt:
             # Simple replacement strategy: clear table on overflow
             self.tt.clear()
@@ -241,7 +257,7 @@ class Searcher:
             # Keep deeper entries unless new one is exact.
             if existing.depth > depth and flag != TT_EXACT:
                 return
-        self.tt[key] = TTEntry(depth=depth, score=score, flag=flag, move=move)
+        self.tt[key] = TTEntry(depth=depth, score=self.score_to_tt(score, ply), flag=flag, move=move)
 
     def quiescence(self, position: Position, alpha: int, beta: int, ply: int) -> int:
         if ply >= MAX_PLY - 1:
@@ -323,13 +339,14 @@ class Searcher:
         tt_move: Optional[Move] = None
         if tt_entry:
             tt_move = tt_entry.move
+            tt_score = self.score_from_tt(tt_entry.score, ply)
             if ply > 0 and tt_entry.depth >= depth:
                 if tt_entry.flag == TT_EXACT:
-                    return tt_entry.score
-                if tt_entry.flag == TT_ALPHA and tt_entry.score <= alpha:
-                    return tt_entry.score
-                if tt_entry.flag == TT_BETA and tt_entry.score >= beta:
-                    return tt_entry.score
+                    return tt_score
+                if tt_entry.flag == TT_ALPHA and tt_score <= alpha:
+                    return tt_score
+                if tt_entry.flag == TT_BETA and tt_score >= beta:
+                    return tt_score
 
         # Null move pruning
         if allow_null and depth >= 3 and not in_check and static_eval >= beta - 75:
@@ -439,7 +456,7 @@ class Searcher:
                     for quiet in quiet_tried:
                         if quiet != move:
                             self.update_history(quiet, -bonus // 2)
-                self.store_tt(position.zobrist_key, depth, beta, TT_BETA, move)
+                self.store_tt(position.zobrist_key, depth, beta, TT_BETA, move, ply)
                 return beta
 
         flag = TT_EXACT
@@ -447,7 +464,7 @@ class Searcher:
             flag = TT_ALPHA
         elif best_score >= beta:
             flag = TT_BETA
-        self.store_tt(position.zobrist_key, depth, best_score, flag, best_move)
+        self.store_tt(position.zobrist_key, depth, best_score, flag, best_move, ply)
         return best_score
 
 

@@ -38,3 +38,9 @@ def test_connected_pawn_bonus() -> None:
     connected = Position.from_fen("4k3/8/8/8/8/8/PP6/4K3 w - - 0 1")
     isolated = Position.from_fen("4k3/8/8/8/8/8/P1P5/4K3 w - - 0 1")
     assert evaluate(connected) > evaluate(isolated)
+
+
+def test_rook_on_seventh_bonus() -> None:
+    rook_seventh = Position.from_fen("4k3/3R4/8/8/8/8/8/4K3 w - - 0 1")
+    rook_sixth = Position.from_fen("4k3/8/3R4/8/8/8/8/4K3 w - - 0 1")
+    assert evaluate(rook_seventh) > evaluate(rook_sixth)

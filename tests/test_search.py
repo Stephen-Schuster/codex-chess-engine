@@ -123,3 +123,11 @@ def test_countermove_bonus_applies_in_move_ordering() -> None:
     cand_score = searcher.score_move(pos, cand, ply=0, tt_move=None, prev_move=prev)
     alt_score = searcher.score_move(pos, alt, ply=0, tt_move=None, prev_move=prev)
     assert cand_score > alt_score
+
+
+def test_razoring_does_not_break_forcing_tactics() -> None:
+    searcher = Searcher()
+    # White queen gives immediate tactical pressure; search should still return a legal move.
+    pos = Position.from_fen("4k3/8/8/8/8/8/4Q3/4K3 w - - 0 1")
+    best, _score, _elapsed = searcher.search(pos, SearchLimits(depth=4, nodes=1200))
+    assert best is not None

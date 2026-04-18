@@ -379,6 +379,15 @@ class Searcher:
 
         static_eval = evaluate(position)
 
+        # Razoring: if static eval is far below alpha near frontier,
+        # directly fall back to quiescence.
+        if not in_check and depth <= 2:
+            razor_margin = 200 + 120 * (depth - 1)
+            if static_eval + razor_margin <= alpha:
+                qscore = self.quiescence(position, alpha, beta, ply)
+                if qscore <= alpha:
+                    return qscore
+
         tt_entry = self.tt.get(position.zobrist_key)
         tt_move: Optional[Move] = None
         if tt_entry:

@@ -415,6 +415,19 @@ def evaluate(position: Position) -> int:
                 mg_score -= 24
                 eg_score -= 10
 
+    # Rook on 7th rank pressure bonus.
+    for sq, p in enumerate(position.board):
+        if p == EMPTY or piece_type(p) != ROOK:
+            continue
+        color = piece_color(p)
+        rank = sq // 8
+        if color == WHITE and rank == 6:
+            mg_score += 20
+            eg_score += 25
+        elif color == BLACK and rank == 1:
+            mg_score -= 20
+            eg_score -= 25
+
     # King shelter (simple): count friendly pawns near king file/rank in middlegame.
     try:
         white_king = position.king_square(WHITE)

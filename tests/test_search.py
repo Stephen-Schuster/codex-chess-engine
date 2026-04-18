@@ -131,3 +131,16 @@ def test_razoring_does_not_break_forcing_tactics() -> None:
     pos = Position.from_fen("4k3/8/8/8/8/8/4Q3/4K3 w - - 0 1")
     best, _score, _elapsed = searcher.search(pos, SearchLimits(depth=4, nodes=1200))
     assert best is not None
+
+
+def test_root_repetition_is_draw() -> None:
+    searcher = Searcher()
+    pos = Position.from_fen(Position.START_FEN)
+    # Repeat Nf3 Nf6 Ng1 Ng8 twice; side to move returns to start position.
+    seq = ["g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8"]
+    for u in seq:
+        mv = pos.parse_uci_move(u)
+        assert mv is not None
+        pos.make_move(mv)
+    _best, score, _elapsed = searcher.search(pos, SearchLimits(depth=3))
+    assert score == 0

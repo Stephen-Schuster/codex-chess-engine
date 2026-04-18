@@ -102,6 +102,13 @@ def mirror_square(sq: int) -> int:
 
 
 def evaluate(position: Position) -> int:
+    non_king_pieces = 0
+    for p in position.board:
+        if p != EMPTY and piece_type(p) != KING:
+            non_king_pieces += 1
+    if non_king_pieces == 0:
+        return 0
+
     mg_score = 0
     eg_score = 0
     phase = 0

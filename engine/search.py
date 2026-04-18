@@ -294,6 +294,9 @@ class Searcher:
         if self.should_stop():
             return 0
 
+        if position.halfmove_clock >= 100 or position.is_threefold_repetition() or position.is_insufficient_material():
+            return 0
+
         self.nodes += 1
         in_check = position.in_check(position.side_to_move)
         if in_check:
@@ -360,6 +363,9 @@ class Searcher:
         if self.should_stop():
             return 0
 
+        if position.halfmove_clock >= 100 or position.is_threefold_repetition() or position.is_insufficient_material():
+            return 0
+
         if depth <= 0:
             return self.quiescence(position, alpha, beta, ply)
 
@@ -367,15 +373,6 @@ class Searcher:
         in_check = position.in_check(position.side_to_move)
         if in_check:
             depth += 1
-
-        if ply > 0:
-            if position.halfmove_clock >= 100:
-                return 0
-            if position.is_threefold_repetition():
-                return 0
-
-        if position.is_insufficient_material():
-            return 0
 
         static_eval = evaluate(position)
 

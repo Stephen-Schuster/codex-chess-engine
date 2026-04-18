@@ -44,3 +44,8 @@ def test_rook_on_seventh_bonus() -> None:
     rook_seventh = Position.from_fen("4k3/3R4/8/8/8/8/8/4K3 w - - 0 1")
     rook_sixth = Position.from_fen("4k3/8/3R4/8/8/8/8/4K3 w - - 0 1")
     assert evaluate(rook_seventh) > evaluate(rook_sixth)
+
+
+def test_king_only_is_draw_eval() -> None:
+    pos = Position.from_fen("8/8/8/8/8/2k5/8/K7 w - - 0 1")
+    assert evaluate(pos) == 0

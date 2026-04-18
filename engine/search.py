@@ -245,6 +245,8 @@ class Searcher:
             if position.is_threefold_repetition():
                 return 0
 
+        static_eval = evaluate(position)
+
         tt_entry = self.tt.get(position.zobrist_key)
         tt_move: Optional[Move] = None
         if tt_entry:
@@ -258,7 +260,7 @@ class Searcher:
                     return tt_entry.score
 
         # Null move pruning
-        if allow_null and depth >= 3 and not in_check:
+        if allow_null and depth >= 3 and not in_check and static_eval >= beta - 75:
             has_non_pawn = any(
                 p != 0 and (p > 0) == (position.side_to_move == 0) and piece_type(p) not in (PAWN, KING)
                 for p in position.board
@@ -278,6 +280,10 @@ class Searcher:
                     return 0
                 if score >= beta:
                     return beta
+
+        # Reverse futility pruning in quiet positions
+        if depth <= 3 and not in_check and static_eval - 90 * depth >= beta:
+            return static_eval
 
         legal_moves = position.generate_legal_moves()
         if not legal_moves:

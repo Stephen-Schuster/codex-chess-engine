@@ -3,6 +3,7 @@ from __future__ import annotations
 from .chess_state import (
     BLACK,
     BISHOP,
+    EMPTY,
     KING,
     KNIGHT,
     PAWN,
@@ -111,6 +112,12 @@ def evaluate(position: Position) -> int:
     bishops_white = 0
     bishops_black = 0
 
+    mobility_white = 0
+    mobility_black = 0
+
+    pawns_by_file_white = [0 for _ in range(8)]
+    pawns_by_file_black = [0 for _ in range(8)]
+
     for sq, p in enumerate(position.board):
         if p == 0:
             continue
@@ -128,8 +135,10 @@ def evaluate(position: Position) -> int:
             eg += PAWN_PST[psq]
             if color == WHITE:
                 pawns_white[sq % 8] = True
+                pawns_by_file_white[sq % 8] += 1
             else:
                 pawns_black[sq % 8] = True
+                pawns_by_file_black[sq % 8] += 1
         elif ptype == KNIGHT:
             mg += KNIGHT_PST[psq]
             eg += KNIGHT_PST[psq]
@@ -157,6 +166,54 @@ def evaluate(position: Position) -> int:
         mg_score += sign * mg
         eg_score += sign * eg
 
+        # Lightweight mobility by piece reach
+        rank = sq // 8
+        file = sq % 8
+        if ptype == KNIGHT:
+            for dr, df in [
+                (-2, -1),
+                (-2, 1),
+                (-1, -2),
+                (-1, 2),
+                (1, -2),
+                (1, 2),
+                (2, -1),
+                (2, 1),
+            ]:
+                r, f = rank + dr, file + df
+                if not (0 <= r < 8 and 0 <= f < 8):
+                    continue
+                tp = position.board[r * 8 + f]
+                if tp == EMPTY or piece_color(tp) != color:
+                    if color == WHITE:
+                        mobility_white += 1
+                    else:
+                        mobility_black += 1
+        elif ptype in (BISHOP, ROOK, QUEEN):
+            directions = []
+            if ptype in (BISHOP, QUEEN):
+                directions.extend([(-1, -1), (-1, 1), (1, -1), (1, 1)])
+            if ptype in (ROOK, QUEEN):
+                directions.extend([(-1, 0), (1, 0), (0, -1), (0, 1)])
+            for dr, df in directions:
+                r, f = rank + dr, file + df
+                while 0 <= r < 8 and 0 <= f < 8:
+                    tp = position.board[r * 8 + f]
+                    if tp == EMPTY:
+                        if color == WHITE:
+                            mobility_white += 1
+                        else:
+                            mobility_black += 1
+                    else:
+                        if piece_color(tp) != color:
+                            if color == WHITE:
+                                mobility_white += 1
+                            else:
+                                mobility_black += 1
+                        break
+                    r += dr
+                    f += df
+
     # Bishop pair bonus
     if bishops_white >= 2:
         mg_score += 35
@@ -176,6 +233,49 @@ def evaluate(position: Position) -> int:
             mg_score -= 5
         elif pawns_black[file]:
             mg_score += 8
+
+        if pawns_by_file_white[file] > 1:
+            mg_score -= 10 * (pawns_by_file_white[file] - 1)
+        if pawns_by_file_black[file] > 1:
+            mg_score += 10 * (pawns_by_file_black[file] - 1)
+
+    # Passed pawn bonuses
+    for sq, p in enumerate(position.board):
+        if p == EMPTY or piece_type(p) != PAWN:
+            continue
+        color = piece_color(p)
+        rank = sq // 8
+        file = sq % 8
+        is_passed = True
+        if color == WHITE:
+            for r in range(rank + 1, 8):
+                for f in range(max(0, file - 1), min(7, file + 1) + 1):
+                    tp = position.board[r * 8 + f]
+                    if tp != EMPTY and piece_color(tp) == BLACK and piece_type(tp) == PAWN:
+                        is_passed = False
+                        break
+                if not is_passed:
+                    break
+            if is_passed:
+                bonus = 12 + rank * 10
+                mg_score += bonus
+                eg_score += bonus * 2
+        else:
+            for r in range(rank - 1, -1, -1):
+                for f in range(max(0, file - 1), min(7, file + 1) + 1):
+                    tp = position.board[r * 8 + f]
+                    if tp != EMPTY and piece_color(tp) == WHITE and piece_type(tp) == PAWN:
+                        is_passed = False
+                        break
+                if not is_passed:
+                    break
+            if is_passed:
+                bonus = 12 + (7 - rank) * 10
+                mg_score -= bonus
+                eg_score -= bonus * 2
+
+    mg_score += (mobility_white - mobility_black) * 2
+    eg_score += (mobility_white - mobility_black)
 
     phase = min(24, phase)
     score = (mg_score * phase + eg_score * (24 - phase)) // 24

@@ -545,6 +545,24 @@ def evaluate(position: Position) -> int:
         except ValueError:
             pass
 
+    # Punish king exposure when central pawns are gone while queens remain.
+    queens_on_board = False
+    for p in position.board:
+        if p != EMPTY and piece_type(p) == QUEEN:
+            queens_on_board = True
+            break
+    if queens_on_board:
+        # White center pawns e2/d2 missing weakens king shelter.
+        if position.board[12] == EMPTY:
+            mg_score -= 8
+        if position.board[11] == EMPTY:
+            mg_score -= 8
+        # Black center pawns e7/d7 missing.
+        if position.board[52] == EMPTY:
+            mg_score += 8
+        if position.board[51] == EMPTY:
+            mg_score += 8
+
     # King centralization in endgames.
     wk = position.king_square(WHITE)
     bk = position.king_square(BLACK)

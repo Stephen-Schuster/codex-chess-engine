@@ -81,3 +81,9 @@ def test_early_queen_move_penalty() -> None:
     normal = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     # Queen excursion should not be rewarded over normal setup.
     assert evaluate(early_queen) <= evaluate(normal) + 20
+
+
+def test_center_pawn_loss_with_queens_penalty() -> None:
+    intact = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    missing_center = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1")
+    assert evaluate(intact) > evaluate(missing_center)

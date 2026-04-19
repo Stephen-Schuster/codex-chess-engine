@@ -150,6 +150,14 @@ def test_lmp_keeps_tactical_captures() -> None:
     assert best is not None
 
 
+def test_mate_distance_window_pruning_stable() -> None:
+    searcher = Searcher()
+    pos = Position.from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1")
+    # Already checkmated; search should return extreme negative score, not crash.
+    _best, score, _elapsed = searcher.search(pos, SearchLimits(depth=5, nodes=1200))
+    assert score <= -99990
+
+
 def test_quiescence_writes_tt_entry() -> None:
     searcher = Searcher()
     pos = Position.from_fen("4k3/8/8/3q4/3Q4/8/8/4K3 w - - 0 1")

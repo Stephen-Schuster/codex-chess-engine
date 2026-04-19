@@ -303,6 +303,12 @@ class Searcher:
         if position.halfmove_clock >= 100 or position.is_threefold_repetition() or position.is_insufficient_material():
             return 0
 
+        # Mate distance pruning window in qsearch.
+        alpha = max(alpha, -MATE_SCORE + ply)
+        beta = min(beta, MATE_SCORE - ply - 1)
+        if alpha >= beta:
+            return alpha
+
         tt_entry = self.tt.get(position.zobrist_key)
         tt_move: Optional[Move] = None
         if tt_entry and tt_entry.depth == 0:
@@ -393,6 +399,12 @@ class Searcher:
 
         if position.halfmove_clock >= 100 or position.is_threefold_repetition() or position.is_insufficient_material():
             return 0
+
+        # Mate distance pruning window.
+        alpha = max(alpha, -MATE_SCORE + ply)
+        beta = min(beta, MATE_SCORE - ply - 1)
+        if alpha >= beta:
+            return alpha
 
         if depth <= 0:
             return self.quiescence(position, alpha, beta, ply)
@@ -516,7 +528,14 @@ class Searcher:
                 and alpha > -MATE_SCORE + 1000
                 and beta < MATE_SCORE - 1000
             ):
-                threshold = LMP_BASE.get(depth, 16) + (2 if extension == 0 else 0)
+                threshold = LMP_BASE.get(depth, 16)
+                # Keep more moves when material is unbalanced or in tactical positions.
+                tactical_relax = 0
+                if abs(static_eval) > 120:
+                    tactical_relax += 3
+                if move_count <= 2:
+                    tactical_relax += 1
+                threshold += tactical_relax
                 if move_count > threshold:
                     position.unmake_move(move, undo)
                     continue

@@ -545,6 +545,24 @@ def evaluate(position: Position) -> int:
         except ValueError:
             pass
 
+        # Encourage classical center occupation in opening.
+        center_bonus = 0
+        white_e4 = position.board[28]
+        white_d4 = position.board[27]
+        black_e5 = position.board[36]
+        black_d5 = position.board[35]
+
+        if white_e4 != EMPTY and piece_color(white_e4) == WHITE and piece_type(white_e4) == PAWN:
+            center_bonus += 18
+        if white_d4 != EMPTY and piece_color(white_d4) == WHITE and piece_type(white_d4) == PAWN:
+            center_bonus += 16
+        if black_e5 != EMPTY and piece_color(black_e5) == BLACK and piece_type(black_e5) == PAWN:
+            center_bonus -= 18
+        if black_d5 != EMPTY and piece_color(black_d5) == BLACK and piece_type(black_d5) == PAWN:
+            center_bonus -= 16
+
+        mg_score += center_bonus
+
     # Punish king exposure when central pawns are gone while queens remain.
     queens_on_board = False
     for p in position.board:

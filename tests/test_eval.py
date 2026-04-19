@@ -83,6 +83,12 @@ def test_early_queen_move_penalty() -> None:
     assert evaluate(early_queen) <= evaluate(normal) + 20
 
 
+def test_opening_center_pawn_bonus() -> None:
+    with_center = Position.from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1")
+    no_center = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    assert evaluate(with_center) > evaluate(no_center)
+
+
 def test_center_pawn_loss_with_queens_penalty() -> None:
     intact = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     missing_center = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1")

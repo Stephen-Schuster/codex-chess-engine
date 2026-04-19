@@ -535,6 +535,9 @@ class Searcher:
                 tactical_relax = 0
                 if abs(static_eval) > 120:
                     tactical_relax += 3
+                # Keep principal/ordered early moves untouched.
+                if move_count <= 2:
+                    tactical_relax += 2
                 threshold += tactical_relax
                 if move_count > threshold:
                     position.unmake_move(move, undo)

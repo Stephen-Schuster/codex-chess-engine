@@ -164,6 +164,13 @@ def test_lmp_does_not_fake_mate_scores_in_startpos() -> None:
     assert abs(score) < 10000
 
 
+def test_startpos_prefers_developing_move() -> None:
+    searcher = Searcher()
+    best, _score, _elapsed = searcher.search(Position.from_fen(Position.START_FEN), SearchLimits(depth=4, nodes=1500))
+    assert best is not None
+    assert best.to_uci() in {"e2e4", "d2d4", "g1f3", "b1c3", "c2c4"}
+
+
 def test_quiescence_writes_tt_entry() -> None:
     searcher = Searcher()
     pos = Position.from_fen("4k3/8/8/3q4/3Q4/8/8/4K3 w - - 0 1")

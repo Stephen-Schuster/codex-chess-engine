@@ -87,3 +87,9 @@ def test_center_pawn_loss_with_queens_penalty() -> None:
     intact = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     missing_center = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1")
     assert evaluate(intact) > evaluate(missing_center)
+
+
+def test_eval_checkmate_terminal_score() -> None:
+    # Static eval should not crash on terminal positions.
+    mate = Position.from_fen("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1")
+    _ = evaluate(mate)

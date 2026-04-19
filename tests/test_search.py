@@ -158,6 +158,12 @@ def test_mate_distance_window_pruning_stable() -> None:
     assert score <= -99990
 
 
+def test_lmp_does_not_fake_mate_scores_in_startpos() -> None:
+    searcher = Searcher()
+    _best, score, _elapsed = searcher.search(Position.from_fen(Position.START_FEN), SearchLimits(depth=3))
+    assert abs(score) < 10000
+
+
 def test_quiescence_writes_tt_entry() -> None:
     searcher = Searcher()
     pos = Position.from_fen("4k3/8/8/3q4/3Q4/8/8/4K3 w - - 0 1")

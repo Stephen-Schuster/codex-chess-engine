@@ -19,9 +19,9 @@ INFINITY = 1_000_000
 MAX_PLY = 256
 LMP_BASE = {
     1: 0,
-    2: 8,
-    3: 12,
-    4: 16,
+    2: 10,
+    3: 16,
+    4: 24,
 }
 
 
@@ -487,6 +487,7 @@ class Searcher:
         best_score = -INFINITY
 
         move_count = 0
+        searched_any = False
         quiet_tried: List[Move] = []
         for move in ordered:
             move_count += 1
@@ -520,7 +521,8 @@ class Searcher:
 
             # Late move pruning for quiet non-check moves.
             if (
-                depth <= 4
+                depth >= 2
+                and depth <= 4
                 and not in_check
                 and not gives_check
                 and not move.is_capture
@@ -533,8 +535,6 @@ class Searcher:
                 tactical_relax = 0
                 if abs(static_eval) > 120:
                     tactical_relax += 3
-                if move_count <= 2:
-                    tactical_relax += 1
                 threshold += tactical_relax
                 if move_count > threshold:
                     position.unmake_move(move, undo)
@@ -557,6 +557,8 @@ class Searcher:
 
             if not move.is_capture and not move.promotion:
                 quiet_tried.append(move)
+
+            searched_any = True
 
             if move_count == 1:
                 score = -self.alphabeta(position, depth - 1 + extension, -beta, -alpha, ply + 1, True, move)
@@ -596,6 +598,9 @@ class Searcher:
                         self.countermoves[prev_move.from_sq][prev_move.to_sq] = move
                 self.store_tt(position.zobrist_key, depth, beta, TT_BETA, move, ply)
                 return beta
+
+        if not searched_any:
+            return static_eval
 
         flag = TT_EXACT
         if best_score <= orig_alpha:

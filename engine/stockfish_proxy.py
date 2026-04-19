@@ -34,10 +34,12 @@ def main() -> int:
     out_thread.start()
     err_thread.start()
 
-    threads = int(os.environ.get("STOCKFISH_THREADS", "1"))
+    threads = int(os.environ.get("STOCKFISH_THREADS", "2"))
     threads = max(1, min(4, threads))
     hash_mb = int(os.environ.get("STOCKFISH_HASH_MB", "128"))
     hash_mb = max(16, min(2048, hash_mb))
+    move_overhead = int(os.environ.get("STOCKFISH_MOVE_OVERHEAD", "30"))
+    move_overhead = max(0, min(5000, move_overhead))
 
     options_sent = False
 
@@ -46,6 +48,9 @@ def main() -> int:
         if raw.strip() == "uci" and not options_sent:
             proc.stdin.write(f"setoption name Threads value {threads}\n")
             proc.stdin.write(f"setoption name Hash value {hash_mb}\n")
+            proc.stdin.write("setoption name Skill Level value 20\n")
+            proc.stdin.write("setoption name UCI_LimitStrength value false\n")
+            proc.stdin.write(f"setoption name Move Overhead value {move_overhead}\n")
             options_sent = True
         proc.stdin.flush()
         if raw.strip() == "quit":

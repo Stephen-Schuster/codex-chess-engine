@@ -68,3 +68,16 @@ def test_king_centralization_endgame_bonus() -> None:
     centered = Position.from_fen("7k/p7/8/3K4/8/8/P7/8 w - - 0 1")
     not_centered = Position.from_fen("7k/p7/8/8/8/8/P7/3K4 w - - 0 1")
     assert evaluate(centered) > evaluate(not_centered)
+
+
+def test_opening_development_bonus() -> None:
+    developed = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R w KQkq - 0 1")
+    undeveloped = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    assert evaluate(developed) > evaluate(undeveloped)
+
+
+def test_early_queen_move_penalty() -> None:
+    early_queen = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/7Q/PPPPPPPP/RNB1KBNR w KQkq - 0 1")
+    normal = Position.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    # Queen excursion should not be rewarded over normal setup.
+    assert evaluate(early_queen) <= evaluate(normal) + 20

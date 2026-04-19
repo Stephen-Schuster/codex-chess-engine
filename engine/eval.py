@@ -485,6 +485,66 @@ def evaluate(position: Position) -> int:
     # Tempo bonus to side to move.
     mg_score += 8 if position.side_to_move == WHITE else -8
 
+    # Opening development and king safety heuristics.
+    if position.fullmove_number <= 14:
+        white_dev = 0
+        black_dev = 0
+        white_queen_moved = False
+        black_queen_moved = False
+
+        for sq, p in enumerate(position.board):
+            if p == EMPTY:
+                continue
+            color = piece_color(p)
+            ptype = piece_type(p)
+            rank = sq // 8
+            file = sq % 8
+
+            if ptype == KNIGHT:
+                if color == WHITE:
+                    if rank != 0:
+                        white_dev += 1
+                    if file in (0, 7):
+                        mg_score -= 12
+                else:
+                    if rank != 7:
+                        black_dev += 1
+                    if file in (0, 7):
+                        mg_score += 12
+            elif ptype == BISHOP:
+                if color == WHITE:
+                    if rank != 0:
+                        white_dev += 1
+                else:
+                    if rank != 7:
+                        black_dev += 1
+            elif ptype == QUEEN:
+                if color == WHITE and sq != 3:
+                    white_queen_moved = True
+                if color == BLACK and sq != 59:
+                    black_queen_moved = True
+
+        mg_score += (white_dev - black_dev) * 12
+
+        if white_queen_moved and white_dev < 2:
+            mg_score -= 18
+        if black_queen_moved and black_dev < 2:
+            mg_score += 18
+
+        try:
+            wk = position.king_square(WHITE)
+            bk = position.king_square(BLACK)
+            if wk in (2, 6):
+                mg_score += 14
+            elif wk != 4:
+                mg_score -= 24
+            if bk in (58, 62):
+                mg_score -= 14
+            elif bk != 60:
+                mg_score += 24
+        except ValueError:
+            pass
+
     # King centralization in endgames.
     wk = position.king_square(WHITE)
     bk = position.king_square(BLACK)

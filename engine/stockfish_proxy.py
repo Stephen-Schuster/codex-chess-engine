@@ -869,6 +869,22 @@ def main() -> int:
     anti_rep_search_force_min_eval_cp_black = int(os.environ.get("BOOK_ANTI_REP_SEARCH_FORCE_MIN_EVAL_CP_BLACK", "300"))
     anti_rep_search_force_min_keep_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_FORCE_MIN_KEEP_WHITE", "2"))
     anti_rep_search_force_min_keep_black = int(os.environ.get("BOOK_ANTI_REP_SEARCH_FORCE_MIN_KEEP_BLACK", "2"))
+    anti_rep_search_twofold_white = os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_WHITE", "1").strip().lower() not in {"0", "false", "no", "off"}
+    anti_rep_search_twofold_min_ply_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_MIN_PLY_WHITE", "18"))
+    anti_rep_search_twofold_max_ply_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_MAX_PLY_WHITE", "54"))
+    anti_rep_search_twofold_min_time_ms_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_MIN_TIME_MS_WHITE", "12000"))
+    anti_rep_search_twofold_max_clock_deficit_ms_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_MAX_CLOCK_DEFICIT_MS_WHITE", "1200"))
+    anti_rep_search_twofold_min_material_cp_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_MIN_MATERIAL_CP_WHITE", "110"))
+    anti_rep_search_twofold_min_eval_cp_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_MIN_EVAL_CP_WHITE", "120"))
+    anti_rep_search_twofold_min_keep_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_TWOFOLD_MIN_KEEP_WHITE", "2"))
+    anti_rep_search_adv_white = os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_WHITE", "0").strip().lower() not in {"0", "false", "no", "off"}
+    anti_rep_search_adv_min_ply_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_MIN_PLY_WHITE", "24"))
+    anti_rep_search_adv_max_ply_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_MAX_PLY_WHITE", "120"))
+    anti_rep_search_adv_min_time_ms_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_MIN_TIME_MS_WHITE", "11000"))
+    anti_rep_search_adv_max_clock_deficit_ms_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_MAX_CLOCK_DEFICIT_MS_WHITE", "1200"))
+    anti_rep_search_adv_min_material_cp_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_MIN_MATERIAL_CP_WHITE", "120"))
+    anti_rep_search_adv_min_eval_cp_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_MIN_EVAL_CP_WHITE", "220"))
+    anti_rep_search_adv_min_keep_white = int(os.environ.get("BOOK_ANTI_REP_SEARCH_ADV_MIN_KEEP_WHITE", "2"))
     anti_rep_search_min_ply_white = max(0, min(300, anti_rep_search_min_ply_white))
     anti_rep_search_min_ply_black = max(0, min(300, anti_rep_search_min_ply_black))
     anti_rep_search_clock_lead_ms_white = max(0, min(60000, anti_rep_search_clock_lead_ms_white))
@@ -889,6 +905,20 @@ def main() -> int:
     anti_rep_search_force_min_eval_cp_black = max(-4000, min(4000, anti_rep_search_force_min_eval_cp_black))
     anti_rep_search_force_min_keep_white = max(1, min(64, anti_rep_search_force_min_keep_white))
     anti_rep_search_force_min_keep_black = max(1, min(64, anti_rep_search_force_min_keep_black))
+    anti_rep_search_twofold_min_ply_white = max(0, min(300, anti_rep_search_twofold_min_ply_white))
+    anti_rep_search_twofold_max_ply_white = max(0, min(300, anti_rep_search_twofold_max_ply_white))
+    anti_rep_search_twofold_min_time_ms_white = max(0, min(300000, anti_rep_search_twofold_min_time_ms_white))
+    anti_rep_search_twofold_max_clock_deficit_ms_white = max(0, min(300000, anti_rep_search_twofold_max_clock_deficit_ms_white))
+    anti_rep_search_twofold_min_material_cp_white = max(-4000, min(4000, anti_rep_search_twofold_min_material_cp_white))
+    anti_rep_search_twofold_min_eval_cp_white = max(-4000, min(4000, anti_rep_search_twofold_min_eval_cp_white))
+    anti_rep_search_twofold_min_keep_white = max(1, min(64, anti_rep_search_twofold_min_keep_white))
+    anti_rep_search_adv_min_ply_white = max(0, min(300, anti_rep_search_adv_min_ply_white))
+    anti_rep_search_adv_max_ply_white = max(0, min(300, anti_rep_search_adv_max_ply_white))
+    anti_rep_search_adv_min_time_ms_white = max(0, min(300000, anti_rep_search_adv_min_time_ms_white))
+    anti_rep_search_adv_max_clock_deficit_ms_white = max(0, min(300000, anti_rep_search_adv_max_clock_deficit_ms_white))
+    anti_rep_search_adv_min_material_cp_white = max(-4000, min(4000, anti_rep_search_adv_min_material_cp_white))
+    anti_rep_search_adv_min_eval_cp_white = max(-4000, min(4000, anti_rep_search_adv_min_eval_cp_white))
+    anti_rep_search_adv_min_keep_white = max(1, min(64, anti_rep_search_adv_min_keep_white))
     avoid_draw_white = os.environ.get("BOOK_AVOID_DRAW_WHITE", "1").strip().lower() not in {"0", "false", "no", "off"}
     avoid_draw_black = os.environ.get("BOOK_AVOID_DRAW_BLACK", "0").strip().lower() not in {"0", "false", "no", "off"}
     avoid_draw_games = int(os.environ.get("BOOK_AVOID_DRAW_GAMES", "300"))
@@ -1180,7 +1210,7 @@ def main() -> int:
             return False
         pos.push(mv)
         try:
-            return pos.is_repetition(3) or pos.can_claim_threefold_repetition()
+            return pos.is_repetition(3)
         finally:
             pos.pop()
 
@@ -1335,12 +1365,29 @@ def main() -> int:
             force_eval_need = anti_rep_search_force_min_eval_cp_black
             force_min_keep = anti_rep_search_force_min_keep_black
 
-        if not normal_enabled and not force_enabled:
-            return None
-
         material_edge = material_balance_cp(pos)
         eval_cp = info_cp
         eval_mate = info_mate
+
+        adv_trigger = False
+        adv_min_keep = 1
+        if (
+            stm == "w"
+            and anti_rep_search_adv_white
+            and anti_rep_search_adv_min_ply_white <= pos.ply() <= anti_rep_search_adv_max_ply_white
+            and my_time is not None
+            and my_time >= anti_rep_search_adv_min_time_ms_white
+            and my_time > critical_time_ms
+            and (opp_time is None or my_time + anti_rep_search_adv_max_clock_deficit_ms_white >= opp_time)
+        ):
+            eval_ok = (eval_mate is not None and eval_mate > 0) or (
+                eval_cp is not None and eval_cp >= anti_rep_search_adv_min_eval_cp_white
+            )
+            adv_trigger = material_edge >= anti_rep_search_adv_min_material_cp_white and eval_ok
+            adv_min_keep = anti_rep_search_adv_min_keep_white
+
+        if not normal_enabled and not force_enabled and not adv_trigger:
+            return None
 
         normal_trigger = False
         if normal_enabled and my_time is not None and opp_time is not None and my_time - opp_time >= clock_need:
@@ -1358,20 +1405,45 @@ def main() -> int:
             eval_ok = (eval_mate is not None and eval_mate > 0) or (eval_cp is not None and eval_cp >= force_eval_need)
             force_trigger = material_edge >= force_material_need or eval_ok
 
-        if not normal_trigger and not force_trigger:
+        if not normal_trigger and not force_trigger and not adv_trigger:
             return None
 
         keep: list[str] = []
         repeat_count = 0
+        twofold_repeat_count = 0
+        filter_twofold = False
+        if (
+            stm == "w"
+            and anti_rep_search_twofold_white
+            and anti_rep_search_twofold_min_ply_white <= pos.ply() <= anti_rep_search_twofold_max_ply_white
+            and my_time is not None
+            and my_time >= anti_rep_search_twofold_min_time_ms_white
+            and (opp_time is None or my_time + anti_rep_search_twofold_max_clock_deficit_ms_white >= opp_time)
+        ):
+            eval_ok = (eval_mate is not None and eval_mate > 0) or (
+                eval_cp is not None and eval_cp >= anti_rep_search_twofold_min_eval_cp_white
+            )
+            filter_twofold = material_edge >= anti_rep_search_twofold_min_material_cp_white or eval_ok
         for mv in pos.legal_moves:
             u = mv.uci()
             if move_repeats_threefold(pos, u):
                 repeat_count += 1
+            elif filter_twofold and move_repeats_twofold(pos, u):
+                twofold_repeat_count += 1
             else:
                 keep.append(u)
-        if repeat_count == 0 or not keep:
+        if repeat_count == 0 and twofold_repeat_count == 0:
             return None
-        if force_trigger and len(keep) < force_min_keep:
+        if not keep:
+            return None
+        required_keep = 1
+        if force_trigger:
+            required_keep = max(required_keep, force_min_keep)
+        if adv_trigger:
+            required_keep = max(required_keep, adv_min_keep)
+        if len(keep) < required_keep:
+            return None
+        if filter_twofold and twofold_repeat_count > 0 and len(keep) < anti_rep_search_twofold_min_keep_white:
             return None
         return keep
 
@@ -1526,6 +1598,13 @@ def main() -> int:
 
             prefix_key = tuple(m.uci() for m in board.move_stack)
             if not avoid_book_here:
+                book_move = choose_book_move(board)
+                if book_move is not None:
+                    mv = chess.Move.from_uci(book_move)
+                    if mv in board.legal_moves and not should_skip_book_repetition(board, book_move, raw, side_to_move):
+                        print(f"bestmove {book_move}", flush=True)
+                        continue
+
                 empirical_book = empirical_book_white if board.turn == chess.WHITE else empirical_book_black
                 empirical = empirical_book.get(prefix_key)
                 if empirical is not None:
@@ -1540,13 +1619,6 @@ def main() -> int:
                     mv = chess.Move.from_uci(empirical_pos)
                     if mv in board.legal_moves and not should_skip_book_repetition(board, empirical_pos, raw, side_to_move):
                         print(f"bestmove {empirical_pos}", flush=True)
-                        continue
-
-                book_move = choose_book_move(board)
-                if book_move is not None:
-                    mv = chess.Move.from_uci(book_move)
-                    if mv in board.legal_moves and not should_skip_book_repetition(board, book_move, raw, side_to_move):
-                        print(f"bestmove {book_move}", flush=True)
                         continue
 
             forced_mt = emergency_movetime(raw, side_to_move)
@@ -1565,8 +1637,12 @@ def main() -> int:
                 latest_info_mate = None
             searchmoves = anti_rep_searchmoves(board, raw, side_to_move, prior_info_cp, prior_info_mate)
             if searchmoves is not None:
-                go_line = raw.strip()
-                proc.stdin.write(f"{go_line} searchmoves {' '.join(searchmoves)}\n")
+                go_prefix = extract_go_prefix(raw)
+                if forced_mt is not None:
+                    proc.stdin.write(f"{go_prefix} movetime {forced_mt} searchmoves {' '.join(searchmoves)}\n")
+                else:
+                    go_line = raw.strip()
+                    proc.stdin.write(f"{go_line} searchmoves {' '.join(searchmoves)}\n")
                 proc.stdin.flush()
                 continue
             if forced_mt is not None:
